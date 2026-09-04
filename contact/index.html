@@ -157,6 +157,7 @@ a{color:inherit;text-decoration:none}
 }
 .masthead > *{pointer-events:auto}
 .masthead.is-dark{color:var(--ivory)}
+.masthead__left{display:flex;align-items:center;gap:clamp(.7rem,2.2vw,1.1rem)}
 .masthead__mark{display:flex;align-items:center;gap:.6rem}
 .masthead__mark svg{width:clamp(26px,3.4vw,34px);height:auto;display:block;flex:none}
 .masthead__mark .nm{font-family:var(--serif);font-size:.9rem;letter-spacing:.02em}
@@ -175,6 +176,28 @@ a{color:inherit;text-decoration:none}
 .quick a::after{content:"";position:absolute;left:0;right:0;bottom:.34rem;height:1px;background:currentColor;opacity:.28;transform:scaleX(1);transform-origin:left;transition:opacity .3s var(--ease)}
 .quick a:hover::after{opacity:1}
 .quick a.is-accent{color:var(--ox-sm)}
+/* Capsule: accent fill with ink type, so it reads the same over ivory and
+   over the dark scenes and needs no inversion. */
+.cta{
+  display:inline-flex;align-items:center;gap:.3em;
+  padding:.62rem 1.05rem;min-height:36px;
+  border-radius:999px;
+  background:var(--ox);color:#141110;
+  font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;
+  line-height:1;white-space:nowrap;
+  transition:background .35s var(--ease),color .35s var(--ease);
+}
+.cta .arw{display:inline-block;transition:transform .4s var(--ease)}
+.cta:hover,.cta:focus-visible{background:var(--ox-sm);color:var(--ivory)}
+.cta:hover .arw,.cta:focus-visible .arw{transform:translateY(.2em)}
+.masthead.is-dark .cta{color:#141110}
+.masthead.is-dark .cta:hover,.masthead.is-dark .cta:focus-visible{background:var(--ivory);color:#141110}
+/* Below 720px the four direct actions would crowd the row; the capsule lands
+   on the section that holds every one of them. */
+/* Below 720px the wordmark gives way so the four direct actions keep room */
+@media (max-width:719px){
+  .masthead__mark .nm{display:none}
+}
 .masthead.is-dark .quick a.is-accent{color:#D4634F}
 
 .progress{position:fixed;top:0;left:0;height:2px;background:var(--ox);width:100%;transform:scaleX(0);transform-origin:left;z-index:50}
@@ -193,7 +216,17 @@ a{color:inherit;text-decoration:none}
 .cover__kicker .line{display:none;width:clamp(2rem,6vw,5rem);height:1px;background:var(--ox-sm);margin-bottom:.35em}
 @media (min-width:560px){.cover__kicker .line{display:block}}
 
-.cover__name{position:relative;margin:clamp(1.6rem,5vh,3.2rem) 0 0}
+.cover__id{
+  display:flex;align-items:flex-end;flex-wrap:wrap;
+  gap:clamp(.9rem,2.6vw,2.2rem);
+  margin:clamp(1.6rem,5vh,3.2rem) 0 0;
+}
+.cover__name{position:relative;margin:0}
+.cta--cover{
+  padding:.78rem 1.35rem;min-height:42px;
+  font-size:.68rem;letter-spacing:.16em;
+  margin-bottom:clamp(.45rem,1.4vw,1.5rem);
+}
 .cover__name .ln{display:block;overflow:hidden}
 .cover__name .w{
   display:block;
@@ -499,6 +532,7 @@ a{color:inherit;text-decoration:none}
    10 - CONTACT (dark)
    ========================================================================== */
 .contact{padding-bottom:clamp(3rem,8vh,5rem)}
+[id]{scroll-margin-top:calc(3.6rem + env(safe-area-inset-top))}
 .contact__h{font-size:clamp(3.4rem,15vw,11rem);margin-bottom:clamp(1.8rem,5vh,3rem)}
 .contact__h span{display:block}
 .contact__h .b{font-style:italic;font-weight:400;padding-left:.1em}
@@ -610,11 +644,13 @@ a{color:inherit;text-decoration:none}
 <div class="progress" id="progress" aria-hidden="true"></div>
 
 <header class="masthead" id="masthead">
-  <a class="masthead__mark" href="#cover" aria-label="Shimanto Dewan - top of page">
-    <!-- Interlocking S+D monogram -->
-    <svg class="sd" viewBox="0 0 2346.5 1631" role="img" aria-label="SD monogram"><path fill="currentColor" d="m635.12,709.32c-93.61-162.14-38.06-369.47,124.08-463.08h0c52.74-30.45,110.23-45.24,167.08-45.83L810.58,0H3.81l708.24,1226.71c36.47,63.16,14.83,143.93-48.34,180.4l-2.6,1.5c-63.16,36.47-143.93,14.83-180.4-48.34L0,527.64v1103.36h1167.25l-532.13-921.68Z"/><path fill="currentColor" d="m1540.5.5h-591v8.81l510.3,883.87c99.02,171.5,40.26,390.8-131.24,489.81h0c-48.48,27.99-100.78,43.36-153.11,47.15l115.68,200.36h249.37c445.14,0,806-360.86,806-806v-18C2346.5,361.36,1985.64.5,1540.5.5Z"/></svg>
-    <span class="nm">Shimanto Dewan</span>
-  </a>
+  <div class="masthead__left">
+    <a class="masthead__mark" href="#cover" aria-label="Shimanto Dewan - top of page">
+      <!-- SD monogram -->
+      <svg class="sd" viewBox="0 0 2346.5 1631" role="img" aria-label="SD monogram"><path fill="currentColor" d="m635.12,709.32c-93.61-162.14-38.06-369.47,124.08-463.08h0c52.74-30.45,110.23-45.24,167.08-45.83L810.58,0H3.81l708.24,1226.71c36.47,63.16,14.83,143.93-48.34,180.4l-2.6,1.5c-63.16,36.47-143.93,14.83-180.4-48.34L0,527.64v1103.36h1167.25l-532.13-921.68Z"/><path fill="currentColor" d="m1540.5.5h-591v8.81l510.3,883.87c99.02,171.5,40.26,390.8-131.24,489.81h0c-48.48,27.99-100.78,43.36-153.11,47.15l115.68,200.36h249.37c445.14,0,806-360.86,806-806v-18C2346.5,361.36,1985.64.5,1540.5.5Z"/></svg>
+      <span class="nm">Shimanto Dewan</span>
+    </a>
+  </div>
   <p class="masthead__folio"><span id="folio">01</span> / 11 &nbsp;·&nbsp; Vol. 01</p>
   <nav class="quick" aria-label="Quick contact">
     <a id="q-call" href="#contact" hidden>Call</a>
@@ -635,10 +671,13 @@ a{color:inherit;text-decoration:none}
         <p class="meta">Vol. 01 - Dhaka / BD</p>
       </div>
 
-      <h1 class="cover__name display">
-        <span class="ln"><span class="w w--1" data-p="given">Shimanto</span></span>
-        <span class="ln"><span class="w w--2" data-p="family">Dewan</span></span>
-      </h1>
+      <div class="cover__id">
+        <h1 class="cover__name display">
+          <span class="ln"><span class="w w--1" data-p="given">Shimanto</span></span>
+          <span class="ln"><span class="w w--2" data-p="family">Dewan</span></span>
+        </h1>
+        <a class="cta cta--cover" href="#contact">Contact <span class="arw" aria-hidden="true">&#8595;</span></a>
+      </div>
 
       <div class="cover__mid">
         <hr class="rule" id="cover-rule">
@@ -793,23 +832,23 @@ a{color:inherit;text-decoration:none}
 
     <div id="stages">
       <div class="stage">
-        <p class="stage__t">Pearson Edexcel IGCSE</p>
-        <h3 class="stage__n">Accounting, Business, Commerce, English, Mathematics B</h3>
+        <p class="stage__t">O Levels</p>
+        <h3 class="stage__n">General studies</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
       <div class="stage">
-        <p class="stage__t">Pearson Edexcel IAS</p>
+        <p class="stage__t">AS Level</p>
         <h3 class="stage__n">Accounting &amp; Business</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
       <div class="stage">
-        <p class="stage__t">Pearson Edexcel IAL</p>
+        <p class="stage__t">A2 Level</p>
         <h3 class="stage__n">Accounting &amp; Business</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
       <div class="stage is-now">
         <p class="stage__t">Now - First Year</p>
-        <h3 class="stage__n"><em>Barrett Law</em></h3>
+        <h3 class="stage__n"><em>Law</em></h3>
         <p class="stage__i" data-p="university">University of London</p>
       </div>
     </div>
@@ -1132,7 +1171,9 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
 
   document.getElementById("a-vcf").addEventListener("click", save);
   document.getElementById("q-save").addEventListener("click", function(e){
-    e.preventDefault(); save();
+    e.preventDefault();
+    e.stopImmediatePropagation();   // save in place; do not scroll away
+    save();
   });
 })();
 
@@ -1184,14 +1225,70 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
   }, { rootMargin: "-4% 0px -96% 0px" });
   darks.forEach(function(d){ io2.observe(d); });
 
-  document.querySelector(".masthead__mark").addEventListener("click", function(e){
-    e.preventDefault();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+})();
+
+/* ==========================================================================
+   6. IN-PAGE NAVIGATION
+   The skip link and the masthead mark. Works whether or not Lenis and GSAP
+   loaded, and lands keyboard focus on the destination rather than only
+   moving the viewport.
+   ========================================================================== */
+(function nav(){
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function scrollToTarget(el, top, done){
+    // Stop short by the height of the fixed masthead so it never covers the
+    // top of the destination section
+    var mast = document.getElementById("masthead");
+    var clear = mast ? mast.offsetHeight + 6 : 0;
+    var end = top != null ? top
+            : el.getBoundingClientRect().top + (window.pageYOffset || document.documentElement.scrollTop) - clear;
+    end = Math.max(0, end);
+
+    // Lenis owns the scroll position on desktop, so ask it rather than fight it
+    if (window.__lenis) {
+      window.__lenis.scrollTo(end, { duration: reduced ? 0 : 1.15, onComplete: done });
+      return;
+    }
+    if (reduced) { window.scrollTo(0, end); done && done(); return; }
+
+    var start = window.pageYOffset || document.documentElement.scrollTop;
+    var dist  = end - start;
+    // Cap the duration so a jump across the whole document stays about a second
+    var dur   = Math.min(1250, Math.max(450, Math.abs(dist) * 0.22));
+    var t0    = null;
+
+    function frame(t){
+      if (t0 === null) t0 = t;
+      var p = Math.min(1, (t - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);          // ease-out cubic
+      window.scrollTo(0, start + dist * e);
+      if (p < 1) requestAnimationFrame(frame);
+      else done && done();
+    }
+    requestAnimationFrame(frame);
+  }
+  window.scrollToTarget = scrollToTarget;
+
+  document.querySelectorAll('a[href^="#"]').forEach(function(a){
+    var id = a.getAttribute("href");
+    if (id === "#" || id.length < 2) return;
+    a.addEventListener("click", function(e){
+      var t = document.querySelector(id);
+      if (!t) return;
+      e.preventDefault();
+      scrollToTarget(t, null, function(){
+        // Move focus without a second jump, so tabbing continues from here
+        if (!t.hasAttribute("tabindex")) t.setAttribute("tabindex", "-1");
+        t.focus({ preventScroll: true });
+        history.replaceState(null, "", id);
+      });
+    });
   });
 })();
 
 /* ==========================================================================
-   6. MOTION - progressive enhancement only
+   7. MOTION - progressive enhancement only
    ========================================================================== */
 /* Two scroll architectures, chosen once at load:
 
@@ -1222,17 +1319,10 @@ window.addEventListener("load", function(){
   /* ---- Smooth scroll: desktop only. Never on touch. -------------------- */
   if (CINEMATIC && window.Lenis) {
     var lenis = new Lenis({ duration: 1.05, smoothWheel: true, syncTouch: false });
+    window.__lenis = lenis;              // in-page navigation defers to this
     lenis.on("scroll", ScrollTrigger.update);
     gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
     gsap.ticker.lagSmoothing(0);
-    document.querySelectorAll('a[href^="#"]').forEach(function(a){
-      a.addEventListener("click", function(e){
-        var t = document.querySelector(a.getAttribute("href"));
-        if (!t) return;
-        e.preventDefault();
-        lenis.scrollTo(t, { offset: 0 });
-      });
-    });
   }
 
   /* ---- Reveal helper: one-shot, transform + opacity only --------------- */
