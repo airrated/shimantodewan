@@ -461,7 +461,7 @@ a{color:inherit;text-decoration:none}
 .stage:last-of-type{border-bottom:1px solid var(--rule)}
 .stage__t{font-family:var(--mono);font-size:.6rem;letter-spacing:.15em;text-transform:uppercase;color:var(--muted)}
 .stage__n{
-  font-family:var(--serif);font-weight:500;line-height:1;letter-spacing:-.02em;
+  font-family:var(--serif);font-weight:500;line-height:1.02;letter-spacing:-.02em;text-wrap:balance;
   font-size:clamp(1.5rem,4.2vw,2.8rem);margin:0;
 }
 .stage__n em{font-style:italic;font-weight:400}
@@ -553,24 +553,7 @@ a{color:inherit;text-decoration:none}
 }
 
 /* ==========================================================================
-   09 - THE LIFE I'M BUILDING
-   ========================================================================== */
-.building{padding-bottom:clamp(4.5rem,13vh,9rem)}
-.building__h{
-  font-size:clamp(2.8rem,11vw,8rem);
-  margin:clamp(1rem,3vh,2rem) 0 clamp(2rem,6vh,3.4rem);
-}
-.building__h span{display:block}
-.building__h .b{font-style:italic;font-weight:400;color:var(--ox);padding-left:.08em}
-.building__body{display:grid;gap:clamp(1.5rem,4vw,3.2rem)}
-@media (min-width:860px){
-  .building__body{grid-template-columns:1fr 1fr;align-items:start}
-  .building__body p:last-child{margin-top:clamp(1.5rem,4vw,3rem)}
-}
-.building__body p{margin:0}
-
-/* ==========================================================================
-   10 - CONTACT (dark)
+   09 - CONTACT (dark)
    ========================================================================== */
 .contact{padding-bottom:clamp(3rem,8vh,5rem)}
 [id]{scroll-margin-top:calc(3.6rem + env(safe-area-inset-top))}
@@ -629,7 +612,7 @@ a{color:inherit;text-decoration:none}
 .vcf-live{position:absolute;left:-9999px}
 
 /* ==========================================================================
-   11 - COLOPHON
+   10 - COLOPHON
    ========================================================================== */
 .colophon{
  --bg:var(--black);--fg:var(--ivory);--muted:#8C8177;--rule:rgba(243,236,228,.2);--ox-sm:#D4634F;
@@ -693,7 +676,7 @@ a{color:inherit;text-decoration:none}
       <span class="nm">Shimanto Dewan</span>
     </a>
   </div>
-  <p class="masthead__folio"><span id="folio">01</span> / 11 &nbsp;·&nbsp; Vol. 01</p>
+  <p class="masthead__folio"><span id="folio">01</span> / 10 &nbsp;·&nbsp; Vol. 01</p>
   <nav class="quick" aria-label="Quick contact">
     <a id="q-mail" class="is-accent" href="#contact">Email</a>
   </nav>
@@ -764,7 +747,7 @@ a{color:inherit;text-decoration:none}
             <dt>Fields</dt><dd data-p="legalInterestShort">Criminal · Civil · Contract</dd>
           </dl>
         </div>
-        <p class="identity__now"><b>Currently</b><span data-p="currently">First year underway. Training most days.</span></p>
+        <p class="identity__now"><b>Currently</b><span data-p="currently">First year underway.</span></p>
       </div>
 
       <figure class="plate" id="plate">
@@ -891,17 +874,17 @@ a{color:inherit;text-decoration:none}
 
     <div id="stages">
       <div class="stage">
-        <p class="stage__t">O Levels</p>
-        <h3 class="stage__n">General studies</h3>
+        <p class="stage__t">Pearson Edexcel IGCSE</p>
+        <h3 class="stage__n">Accounting, Business, Commerce, Mathematics B, English</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
       <div class="stage">
-        <p class="stage__t">AS Level</p>
+        <p class="stage__t">Pearson Edexcel IAS</p>
         <h3 class="stage__n">Accounting &amp; Business</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
       <div class="stage">
-        <p class="stage__t">A2 Level</p>
+        <p class="stage__t">Pearson Edexcel IAL</p>
         <h3 class="stage__n">Accounting &amp; Business</h3>
         <p class="stage__i">Daffodil International School</p>
       </div>
@@ -969,7 +952,7 @@ a{color:inherit;text-decoration:none}
 
     <div class="character__grid">
       <div>
-        <h2 class="display" id="char-h" style="font-size:clamp(1.6rem,3.6vw,2.4rem);line-height:1.15;max-width:22ch">Seven words I would accept from a supervisor:</h2>
+        <h2 class="display" id="char-h" style="font-size:clamp(1.6rem,3.6vw,2.4rem);line-height:1.15;max-width:22ch">Seven words that describe how I work.</h2>
         <ul class="traits" id="traits">
           <li>Analytical</li>
           <li class="hi"><em>Curious</em></li>
@@ -992,37 +975,15 @@ a{color:inherit;text-decoration:none}
     </div>
   </section>
 
-  <!-- ===================== 09 - THE LIFE I'M BUILDING ===================== -->
-  <section class="scene scene--dark building" id="building" aria-labelledby="build-h" data-scene="09">
-    <p class="scene__index"><span class="n">09</span> <span class="t">Longer term</span></p>
+  <!-- ===================== 09 - CONTACT ===================== -->
+  <section class="scene scene--dark contact" id="contact" aria-labelledby="con-h" data-scene="09">
+    <p class="scene__index"><span class="n">09</span> <span class="t">Contact</span></p>
 
-    <h2 class="display building__h" id="build-h">
-      <span>The life</span><span class="b">I'm building.</span>
-    </h2>
-
-    <div class="building__body">
-      <p class="prose prose--wide">
-        My ambitions extend beyond a career. At the centre of the life I hope to build is
-        the person I love, who has been part of <em>how I have grown, endured, and imagined
-        the future.</em>
-      </p>
-      <p class="prose prose--wide">
-        I want to build that life abroad with her - meaningful work, a lasting marriage,
-        a close family, and the stability we have always wanted to create together. The
-        rest of this page is preparation for it.
-      </p>
-    </div>
-  </section>
-
-  <!-- ===================== 10 - CONTACT ===================== -->
-  <section class="scene scene--dark contact" id="contact" aria-labelledby="con-h" data-scene="10">
-    <p class="scene__index"><span class="n">10</span> <span class="t">Correspondence</span></p>
-
-    <h2 class="display contact__h" id="con-h"><span>Let's</span><span class="b ox">talk.</span></h2>
+    <h2 class="display contact__h" id="con-h"><span>Get in</span><span class="b ox">touch.</span></h2>
 
     <p class="prose prose--wide contact__lead">
-      Email is the best way to reach me. I read it every day and reply
-      <em>when I can.</em>
+      Email is the appropriate first point of contact, and reaches me
+      <em>directly.</em>
     </p>
 
     <ul class="channels">
@@ -1030,15 +991,15 @@ a{color:inherit;text-decoration:none}
     </ul>
 
     <div class="contact__note">
-      <p class="meta">Reply within a day, usually</p>
+      <p class="meta">Enquiries welcome</p>
       <p class="meta" data-p="location">Dhaka, Bangladesh</p>
       <p class="meta">GMT +6</p>
     </div>
   </section>
 
-  <!-- ===================== 11 - COLOPHON ===================== -->
-  <section class="scene colophon" id="colophon" aria-label="Colophon" data-scene="11">
-    <p class="scene__index"><span class="n">11</span> <span class="t">Colophon</span></p>
+  <!-- ===================== 10 - COLOPHON ===================== -->
+  <section class="scene colophon" id="colophon" aria-label="Colophon" data-scene="10">
+    <p class="scene__index"><span class="n">10</span> <span class="t">Colophon</span></p>
 
     <div class="colophon__mid">
       <div class="mono3d" id="mono3d">
@@ -1095,7 +1056,7 @@ const PROFILE = {
   monogram:     "SD",
   portrait:     "/images/shimanto.jpg",
 
-  currently:    "First year underway. Training most days.",
+  currently:    "First year underway.",
 
   socials: {},
 
@@ -1472,8 +1433,6 @@ window.addEventListener("load", function(){
   reveal("#traits li", { trigger: "#traits", start: "top 84%", x: -16, y: 0, stagger: .06, duration: .7 });
   reveal(".character__aside li", { trigger: ".character__aside", stagger: .08, y: 14, duration: .7 });
 
-  reveal(".building__h span", { trigger: "#building", start: "top 72%", yPercent: 55, y: 0, stagger: .09, ease: "expo.out", duration: 1 });
-  reveal(".building__body p", { trigger: ".building__body", stagger: .12 });
 
   reveal(".contact__h span", { trigger: "#contact", start: "top 70%", yPercent: 70, y: 0, stagger: .08, ease: "expo.out", duration: 1 });
   reveal(".contact__lead", { start: "top 90%" });
