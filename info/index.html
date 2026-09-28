@@ -239,10 +239,13 @@ a{color:inherit;text-decoration:none}
 }
 .cover__name{position:relative;margin:0}
 .cta--cover{
-  padding:.78rem 1.35rem;min-height:42px;
-  font-size:.68rem;letter-spacing:.16em;
-  margin-bottom:clamp(.45rem,1.4vw,1.5rem);
+  padding:clamp(.95rem,1.5vw,1.25rem) clamp(1.25rem,2.6vw,2.4rem);
+  min-height:52px;
+  font-size:clamp(.7rem,.95vw,.82rem);letter-spacing:.2em;
+  gap:.55em;
+  margin-bottom:clamp(.5rem,1.6vw,1.8rem);
 }
+.cta--cover .arw{font-size:1.1em}
 .cover__name .ln{display:block;overflow:hidden}
 .cover__name .w{
   display:block;
@@ -654,6 +657,7 @@ a{color:inherit;text-decoration:none}
   .htrack,.ambition__phrase span,.beyond__list .w,.mono3d svg{will-change:auto}
 }
 
+
 /* ==========================================================================
    Reduced motion
    ========================================================================== */
@@ -895,7 +899,7 @@ a{color:inherit;text-decoration:none}
       </div>
     </div>
 
-    <p class="journey__pivot">I learned to audit before I learned to argue.</p>
+    <p class="journey__pivot">The subject changed. The method did not.</p>
   </section>
 
   <!-- ===================== 06 - AMBITION ===================== -->
@@ -988,6 +992,7 @@ a{color:inherit;text-decoration:none}
 
     <ul class="channels">
       <li><a id="a-mail" href="#"><span class="k">Email</span><span class="v" id="v-mail">contact@shimantodewan.com</span><span class="x">Opens mail</span></a></li>
+      <li id="li-li"><a id="a-li" href="#" target="_blank" rel="noopener noreferrer"><span class="k">LinkedIn</span><span class="v">shimantodewan</span><span class="x">Opens profile</span></a></li>
     </ul>
 
     <div class="contact__note">
@@ -1025,6 +1030,7 @@ a{color:inherit;text-decoration:none}
   </section>
 </main>
 
+
 <!-- Motion libraries - the page is fully readable and usable without them -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" defer></script>
@@ -1058,7 +1064,9 @@ const PROFILE = {
 
   currently:    "First year underway.",
 
-  socials: {},
+  socials: {
+    linkedin: "https://www.linkedin.com/in/shimantodewan/"
+  },
 
   get name(){ return this.given + " " + this.family; }
 };
@@ -1095,6 +1103,9 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
 
   // Email is the only channel on this page
   document.getElementById("a-mail").href = "mailto:" + PROFILE.email;
+  var li = (PROFILE.socials || {}).linkedin;
+  if (li) document.getElementById("a-li").href = li;
+  else document.getElementById("li-li").hidden = true;
   document.getElementById("v-mail").textContent = PROFILE.email;
   document.getElementById("q-mail").href = "mailto:" + PROFILE.email;
 
@@ -1138,7 +1149,8 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
     address:{ "@type":"PostalAddress", addressLocality: PROFILE.city, addressCountry: PROFILE.country },
     alumniOf:{ "@type":"EducationalOrganization", name:"Daffodil International School" },
     affiliation:{ "@type":"CollegeOrUniversity", name: PROFILE.university },
-    knowsAbout:["Criminal law","Civil law","Contract law","Legal reasoning","Evidence","Advocacy"]
+    knowsAbout:["Criminal law","Civil law","Contract law","Legal reasoning","Evidence","Advocacy"],
+    sameAs:[PROFILE.socials.linkedin].filter(Boolean)
   });
   document.head.appendChild(s);
 })();
