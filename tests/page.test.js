@@ -70,6 +70,30 @@ function run() {
   ok(!!cross && cross.textContent.trim() === 'Dewan', 'word across the portrait is Dewan');
   ok(!/first year/i.test(d.querySelector('#plate').textContent), 'first year no longer crosses the portrait');
   ok(/\.plate__typecross\{[^}]*font-style:italic[^}]*mix-blend-mode:difference/.test(html), 'it stays italic with the difference blend');
+
+  // the Choose capsules line up across a row: stretched cells, capsule pushed to the bottom
+  ok(/\.books__grid\{[^}]*display:grid;align-items:stretch/.test(html), 'book grid rows stretch to the tallest cell');
+  ok(/\.book\{display:flex;flex-direction:column\}/.test(html), 'each book is still a flex column');
+  ok(/\.cta--choose\{[^}]*margin-top:auto/.test(html), 'the Choose capsule is pushed to the bottom with margin-top:auto');
+  ok(/\.book__more\{margin:\.7rem 0 1rem\}/.test(html), 'a minimum gap above the capsule is kept for the tallest column');
+
+  // payment options in the terms panel
+  {
+    const isInfo = /info/.test(String(file).split(/[\\/]/).slice(-2).join('/'));
+    const h = [...d.querySelectorAll('.order__terms h4')].find((x) => x.textContent.trim() === 'Payment');
+    const sec = h && h.closest('section');
+    const flat = sec ? sec.textContent.replace(/\s+/g, ' ').trim() : '';
+    const WANT = "Payment bKash Personal, Nagad Personal, bank transfer or RedotPay. I'll confirm your total first, then send the details for whichever you prefer.";
+    ok(!!sec && flat.startsWith(WANT), 'payment paragraph lists all four options: ' + flat.slice(0, 60));
+    ok(!/Send payment only after|The number is sent with your order confirmation/.test(flat), 'old payment wording is gone');
+    if (isInfo) {
+      ok(flat === WANT, '/info payment section is the paragraph and nothing more');
+      ok(!html.includes('01301292335') && !html.includes('1301292335'), '/info has no phone number anywhere');
+    } else {
+      ok(flat === WANT + ' bKash and Nagad: 01301292335', '/contact keeps the number after it: ' + flat.slice(WANT.length));
+      ok(!!sec && sec.querySelectorAll('p').length === 2 && sec.querySelector('p + p b').textContent === '01301292335', 'the number is bold in its own line');
+    }
+  }
   ok(d.getElementById('v-mail').textContent.includes('@'), 'email bound from PROFILE');
 
   // totals start hidden, then react to a selection

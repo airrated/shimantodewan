@@ -104,6 +104,15 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     ok(buyer.text.includes('late November 2026'), 'dispatch date in buyer email');
     ok(buyer.text.includes('cancel any time before dispatch'), 'cancellation terms in buyer email');
     ok(buyer.html.includes('do not send payment'), 'payment warning in buyer email');
+    {
+      const flatText = buyer.text.replace(/\s+/g, ' '), flatHtml = buyer.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+      const want = 'send the payment details for bKash, Nagad, Bank Transfer or RedotPay then.';
+      ok(flatText.includes(want), 'buyer text names all four payment options');
+      ok(flatHtml.includes(want), 'buyer html names all four payment options');
+      ok(!/the bKash details/.test(flatText + flatHtml), 'no bKash-only wording left in the buyer email');
+      ok(flatText.includes(want + ' Please do not send payment before that.') && flatHtml.includes(want + ' Please do not send payment before that.'), 'the do-not-pay-yet line follows, intact');
+      ok(buyer.html.includes('<b>Please do not send payment before that.</b>'), 'and stays bold in the html');
+    }
     ok(buyer.text.includes('I will message you on WhatsApp at 01712345678'), 'buyer text says message on WhatsApp');
     ok(buyer.html.includes('I will message you on WhatsApp at <b>01712345678</b>'), 'buyer html says message on WhatsApp');
     ok(!/I will contact you/.test(buyer.text + buyer.html), 'old "contact you on" wording gone');

@@ -179,7 +179,7 @@ function buyerHtml(o) {
       </td></tr>
       <tr><td style="padding-bottom:22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#141110;">
         I will message you on WhatsApp at <b>${esc(o.phone)}</b> to confirm the final total, including the exact
-        delivery charge for your area, and send the bKash details then.
+        delivery charge for your area, and send the payment details for bKash, Nagad, Bank Transfer or RedotPay then.
         <b>Please do not send payment before that.</b>
       </td></tr>
 
@@ -222,7 +222,8 @@ function buyerText(o) {
     "",
     "What happens next:",
     "I will message you on WhatsApp at " + o.phone + " to confirm the final total, including the",
-    "exact delivery charge for your area, and send the bKash details then.",
+    "exact delivery charge for your area, and send the payment details for",
+    "bKash, Nagad, Bank Transfer or RedotPay then.",
     "Please do not send payment before that.",
     "",
     "Changed your mind? Reply to this email with the word CANCEL in capitals, any time",
