@@ -293,7 +293,7 @@ a{color:inherit;text-decoration:none}
   font-family:var(--mono)!important;font-size:.58rem!important;letter-spacing:.12em;
   color:var(--muted);margin-top:.9rem!important;
 }
-.cover__name .ln{display:block;overflow:hidden}
+.cover__name .ln{display:block;overflow:visible}
 .cover__name .w{
   display:block;
   font-size:clamp(3.6rem,16.5vw,15rem);
@@ -358,15 +358,22 @@ a{color:inherit;text-decoration:none}
 @media (min-width:860px){.plate{max-width:300px}}
 .plate__frame{
   position:relative;overflow:hidden;
-  aspect-ratio:4/5;background:var(--ivory-deep);
+  aspect-ratio:543 / 724;background:transparent;
   will-change:clip-path;
 }
-@media (min-width:860px){.plate__frame{aspect-ratio:3/4}}
-@media (max-width:560px){.plate__frame{aspect-ratio:5/6}.plate__frame img{object-position:50% 10%}}
 .plate__frame img{
   width:100%;height:100%;object-fit:cover;object-position:50% 14%;
   filter:grayscale(1) contrast(1.06) brightness(1.02);
   will-change:transform;
+}
+/* The desktop parallax slides the image down by up to 8% of its own height.
+   Drawn 11% taller and lifted 10% it always covers the frame with a margin of
+   about 1% at both ends, so no background can show at any scroll position.
+   Same query as the cinematic layer in JS. */
+@media (min-width:900px) and (pointer:fine){
+  /* the image no longer sizes the figure, so give it a width of its own */
+  .plate{width:100%}
+  .plate__frame img{position:absolute;left:0;top:-10%;height:111%}
 }
 .plate__frame::after{
   content:"";position:absolute;inset:0;pointer-events:none;
@@ -949,7 +956,7 @@ a{color:inherit;text-decoration:none}
           <!-- Portrait injected from PROFILE.portrait; composed plate shown until then -->
           
         </div>
-        <span class="plate__typecross" aria-hidden="true">first year</span>
+        <span class="plate__typecross" aria-hidden="true">Dewan</span>
         <figcaption class="plate__cap">
           <span>Plate I</span>
           <span data-p="location">Dhaka, Bangladesh</span>
@@ -1976,8 +1983,8 @@ window.addEventListener("load", function(){
     gsap.timeline({
       scrollTrigger: { trigger: "#cover", start: "top top", end: "bottom top", scrub: .6, pin: true, anticipatePin: 1 }
     })
-    .to(".cover__name .w--1", { xPercent: -6, yPercent: -14, ease: "none" }, 0)
-    .to(".cover__name .w--2", { xPercent: 5, yPercent: -6, ease: "none" }, 0)
+    .to(".cover__name .w--1", { xPercent: -6, ease: "none" }, 0)
+    .to(".cover__name .w--2", { xPercent: 5, ease: "none" }, 0)
     .to("#cover-drift",       { xPercent: 9, ease: "none" }, 0)
     .to("#cover-rule",        { scaleX: 1, ease: "none" }, 0)
     .to(".cover__kicker",     { opacity: 0, y: -20, ease: "none" }, 0)

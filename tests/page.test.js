@@ -49,6 +49,27 @@ function run() {
   ok(!!l2 && !!l2.querySelector('.arw'), 'the arrow sits on line 2');
   ok(d.querySelector('.cta--alt').getAttribute('href') === '#books', 'second capsule still links to the books');
   ok(!d.querySelector('.cover__actions .cta:not(.cta--alt) .cta__l1'), 'Contact capsule stays a single line');
+
+  // cover name: no mask for the pinned timeline to slide the words into
+  ok(/\.cover__name \.ln\{display:block;overflow:visible\}/.test(html), 'cover name lines are not masked (overflow:visible)');
+  const tl = (html.match(/\.to\("\.cover__name \.w--[12]"[^\n]*/g) || []);
+  ok(tl.length === 2, 'both cover name words are in the pinned timeline');
+  ok(tl.every(l => /xPercent/.test(l) && !/yPercent/.test(l)), 'timeline keeps their horizontal drift and no vertical move');
+  ok(/\.identity__type \.ln\{display:block;overflow:hidden\}/.test(html), 'identity masked reveals are left as they were');
+
+  // portrait plate: frame matches the image, nothing for a background to show through
+  const plate = (html.match(/\.plate__frame\{[^}]*\}/) || [''])[0];
+  ok(/aspect-ratio:543 \/ 724/.test(plate) && /background:transparent/.test(plate), 'plate frame is 543 / 724 on a transparent background');
+  ok(!/aspect-ratio:(4\/5|3\/4|5\/6)/.test(html), 'no breakpoint overrides the plate ratio any more');
+  ok(/\.plate__frame img\{[^}]*object-fit:cover/.test(html), 'plate image stays object-fit:cover');
+  ok(/@media \(min-width:900px\) and \(pointer:fine\)\{[^@]*\.plate__frame img\{position:absolute;left:0;top:-10%;height:111%\}/.test(html), 'desktop parallax is covered by a taller, lifted image');
+  ok(/@media \(min-width:900px\) and \(pointer:fine\)\{[^@]*\.plate\{width:100%\}/.test(html), 'figure keeps its width when the image leaves the flow');
+
+  // the word that crosses the portrait
+  const cross = d.querySelector('.plate__typecross');
+  ok(!!cross && cross.textContent.trim() === 'Dewan', 'word across the portrait is Dewan');
+  ok(!/first year/i.test(d.querySelector('#plate').textContent), 'first year no longer crosses the portrait');
+  ok(/\.plate__typecross\{[^}]*font-style:italic[^}]*mix-blend-mode:difference/.test(html), 'it stays italic with the difference blend');
   ok(d.getElementById('v-mail').textContent.includes('@'), 'email bound from PROFILE');
 
   // totals start hidden, then react to a selection
