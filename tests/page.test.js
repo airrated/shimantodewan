@@ -82,6 +82,8 @@ function run() {
     const panel = d.getElementById('order-done').textContent.replace(/\s+/g, ' ').trim();
     ok(panel.includes('and send the payment details for bKash, Nagad, Bank Transfer or RedotPay. Nothing is charged until then.'), 'order received panel lists all four payment options');
     ok(!/bKash details/.test(panel), 'no bKash-only wording left in the order received panel');
+    ok(panel.includes('I will message you on WhatsApp at the number you gave to confirm your total, including delivery,'), 'order received panel says it will message on WhatsApp');
+    ok(!/call or message/i.test(html), 'the old "call or message" wording is gone from the page');
     ok(/Delivery is 5 to 7 working days, inside Dhaka\./.test(panel), 'the rest of the panel is as it was');
     ok(!/bKash details/.test(html), 'no bKash-only wording left anywhere on the page');
   }
