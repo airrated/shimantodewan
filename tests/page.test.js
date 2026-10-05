@@ -77,6 +77,15 @@ function run() {
   ok(/\.cta--choose\{[^}]*margin-top:auto/.test(html), 'the Choose capsule is pushed to the bottom with margin-top:auto');
   ok(/\.book__more\{margin:\.7rem 0 1rem\}/.test(html), 'a minimum gap above the capsule is kept for the tallest column');
 
+  // the Order received panel names the same payment options as the terms and the email
+  {
+    const panel = d.getElementById('order-done').textContent.replace(/\s+/g, ' ').trim();
+    ok(panel.includes('and send the payment details for bKash, Nagad, Bank Transfer or RedotPay. Nothing is charged until then.'), 'order received panel lists all four payment options');
+    ok(!/bKash details/.test(panel), 'no bKash-only wording left in the order received panel');
+    ok(/Delivery is 5 to 7 working days, inside Dhaka\./.test(panel), 'the rest of the panel is as it was');
+    ok(!/bKash details/.test(html), 'no bKash-only wording left anywhere on the page');
+  }
+
   // payment options in the terms panel
   {
     const isInfo = /info/.test(String(file).split(/[\\/]/).slice(-2).join('/'));
