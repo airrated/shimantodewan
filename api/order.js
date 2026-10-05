@@ -151,7 +151,7 @@ function buyerHtml(o) {
         ${DISPATCH ? "DISPATCH " + esc(DISPATCH.toUpperCase()) + "<br>" : ""}DELIVERY ${DELIVERY_DAYS.toUpperCase()}, INSIDE DHAKA, BY PATHAO<br>
         REFERENCE ${esc(o.ref)}<br>
         CANCEL ANY TIME BEFORE DISPATCH FOR A FULL REFUND<br>
-        To cancel, reply to this email with CANCEL in capitals.<br>
+        TO CANCEL, REPLY TO THIS EMAIL WITH CANCEL IN CAPITALS.<br>
         QUESTIONS, REPLY TO THIS EMAIL
       </td></tr>
       <tr><td style="padding-top:26px;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;">
@@ -258,7 +258,9 @@ function emailHtml(o) {
         PRE-ORDER PRICE ${money(PRICE)} &nbsp;&middot;&nbsp; RRP ${money(WAS)}<br>
         DELIVERY ${DELIVERY_DAYS.toUpperCase()} &nbsp;&middot;&nbsp; INSIDE DHAKA ONLY<br>
         RECEIVED ${esc(o.at)}<br>
-        CONFIRMATION SENT TO BUYER
+        ${o.buyerSent
+          ? "CONFIRMATION SENT TO BUYER"
+          : '<span style="color:#96382A;">CONFIRMATION FAILED, RESEND MANUALLY</span>'}
       </td></tr>
 
     </table>
@@ -289,6 +291,7 @@ function emailText(o) {
     "",
     "Delivery " + DELIVERY_DAYS + ", inside Dhaka only.",
     "Received " + o.at,
+    o.buyerSent ? "Confirmation sent to buyer." : "CONFIRMATION FAILED, RESEND MANUALLY.",
   ].join("\n");
 }
 
@@ -394,6 +397,35 @@ module.exports = async (req, res) => {
     return res.status(500).json({ ok: false, error: "not_configured" });
   }
 
+  // The buyer's copy goes first so the owner email can say whether it
+  // arrived. It is best effort: whatever happens here is reported to the
+  // owner, and never fails the order.
+  order.buyerSent = false;
+  try {
+    const c = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from, to: [email], reply_to: to,
+        subject: "Your pre-order " + order.ref + " - Behind the Eyes",
+        html: buyerHtml(order),
+        text: buyerText(order),
+      }),
+    });
+    if (c.ok) order.buyerSent = true;
+    else console.error("Buyer confirmation failed:", c.status, await c.text());
+  } catch (err) {
+    console.error("Buyer confirmation threw:", err);
+  }
+
+  // The buyer may already hold a confirmation by now, so if the owner copy
+  // cannot be sent the order is written down before the failure is reported.
+  async function ownerFailed() {
+    console.error("Owner email failed; order kept here:", emailText(order));
+    await record({ ...order, ownerEmail: "failed" });
+    return res.status(502).json({ ok: false, error: "send_failed" });
+  }
+
   try {
     const r = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -408,31 +440,12 @@ module.exports = async (req, res) => {
       }),
     });
     if (!r.ok) {
-      const detail = await r.text();
-      console.error("Resend rejected the order email:", r.status, detail);
-      return res.status(502).json({ ok: false, error: "send_failed" });
+      console.error("Resend rejected the order email:", r.status, await r.text());
+      return ownerFailed();
     }
   } catch (err) {
     console.error("Order email threw:", err);
-    return res.status(502).json({ ok: false, error: "send_failed" });
-  }
-
-  // The buyer's copy is best effort: the order is already safely with
-  // Shimanto, so a failure here must not tell the buyer it did not work.
-  try {
-    const c = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from, to: [email], reply_to: to,
-        subject: "Your pre-order " + order.ref + " - Behind the Eyes",
-        html: buyerHtml(order),
-        text: buyerText(order),
-      }),
-    });
-    if (!c.ok) console.error("Buyer confirmation failed:", c.status, await c.text());
-  } catch (err) {
-    console.error("Buyer confirmation threw:", err);
+    return ownerFailed();
   }
 
   await record(order);
