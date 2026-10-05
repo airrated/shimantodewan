@@ -248,12 +248,17 @@ a{color:inherit;text-decoration:none}
 }
 .cta--cover .arw{font-size:1.1em}
 .cover__actions{
-  display:flex;flex-wrap:wrap;gap:clamp(.5rem,1.2vw,.85rem);
+  display:flex;flex-wrap:wrap;align-items:center;gap:clamp(.5rem,1.2vw,.85rem);
   margin-bottom:clamp(.5rem,1.6vw,1.8rem);
 }
 /* The second action is the same capsule a shade deeper, so it reads as a
    sibling rather than a competing system */
 .cta--alt{background:var(--ox-sm);color:var(--ivory)}
+/* Two lines: the book title, then a smaller Pre-order sub-label. Stacked and
+   centred; only this capsule changes, Contact stays a single line. */
+.cta--alt{flex-direction:column;align-items:center;justify-content:center;gap:.45em;text-align:center}
+.cta__l1{display:block}
+.cta__l2{display:block;font-size:.8em;opacity:.75}
 .cta--alt:hover,.cta--alt:focus-visible{background:var(--ink);color:var(--ivory)}
 .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
 .ts-slot:not(:empty){margin:0 0 1.2rem}
@@ -906,7 +911,7 @@ a{color:inherit;text-decoration:none}
         </h1>
         <div class="cover__actions">
           <a class="cta cta--cover" href="#contact">Contact <span class="arw" aria-hidden="true">&#8595;</span></a>
-          <a class="cta cta--cover cta--alt" href="#books">Pre Order <span class="arw" aria-hidden="true">&#8595;</span></a>
+          <a class="cta cta--cover cta--alt" href="#books"><span class="cta__l1">Behind the Eyes</span><span class="cta__l2">Pre-order <span class="arw" aria-hidden="true">&#8595;</span></span></a>
         </div>
       </div>
 

@@ -43,6 +43,12 @@ function run() {
   ok(!!d.getElementById('order-form'), 'order form present');
   ok(d.querySelectorAll('.book').length === 4, 'four books rendered');
   ok(!!d.querySelector('.cta--alt'), 'Pre Order button present');
+  const l1 = d.querySelector('.cta--alt .cta__l1'), l2 = d.querySelector('.cta--alt .cta__l2');
+  ok(!!l1 && l1.textContent.trim() === 'Behind the Eyes', 'second capsule line 1 is Behind the Eyes');
+  ok(!!l2 && l2.textContent.replace(/\s+/g, ' ').trim() === 'Pre-order ↓', 'second capsule line 2 is Pre-order with its arrow');
+  ok(!!l2 && !!l2.querySelector('.arw'), 'the arrow sits on line 2');
+  ok(d.querySelector('.cta--alt').getAttribute('href') === '#books', 'second capsule still links to the books');
+  ok(!d.querySelector('.cover__actions .cta:not(.cta--alt) .cta__l1'), 'Contact capsule stays a single line');
   ok(d.getElementById('v-mail').textContent.includes('@'), 'email bound from PROFILE');
 
   // totals start hidden, then react to a selection
