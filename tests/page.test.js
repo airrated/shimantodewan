@@ -20,8 +20,8 @@ const dom = new JSDOM(html, {
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
-        const good = String(sent.code).trim().toUpperCase() === 'PREORDER20';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good, percent: good ? 20 : 0 }) });
+        const good = String(sent.code).trim().toUpperCase() === 'SAKURA30';
+        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
@@ -76,6 +76,22 @@ function run() {
   ok(/\.book\{display:flex;flex-direction:column\}/.test(html), 'each book is still a flex column');
   ok(/\.cta--choose\{[^}]*margin-top:auto/.test(html), 'the Choose capsule is pushed to the bottom with margin-top:auto');
   ok(/\.book__more\{margin:\.7rem 0 1rem\}/.test(html), 'a minimum gap above the capsule is kept for the tallest column');
+
+  // price copy: cards, order lead and terms panel all say the same fixed prices
+  {
+    const cards = [...d.querySelectorAll('.book__price')];
+    ok(cards.length === 4 && cards.every((c) => c.querySelector('s').textContent === 'BDT 1,499' && c.querySelector('b').textContent === 'BDT 999'), 'every card strikes through the RRP of BDT 1,499 beside BDT 999');
+    const lead = d.querySelector('.order__lead').textContent.replace(/\s+/g, ' ');
+    ok(lead.includes('All four are open for pre-order at BDT 999 instead of BDT 1,499, and BDT 3,799 for the set.'), 'order lead states 999 against 1,499 and 3,799 for the set');
+    const ph = [...d.querySelectorAll('.order__terms h4')].find((x) => x.textContent.trim() === 'Price');
+    const price = ph.closest('section').textContent.replace(/\s+/g, ' ').trim();
+    ok(price === 'Price Pre-order pricing, while it lasts. BDT 999 a book instead of BDT 1,499, or BDT 3,799 for all four instead of BDT 3,996.', 'terms panel price copy: ' + price);
+    ok(!/1,999|4,999|5,996|5,099|1,499 a book/.test(d.body.textContent), 'none of the old prices remain in the page text');
+    ok(!/\d\s?%/.test(d.getElementById('order-form').textContent + d.getElementById('totals').textContent + d.querySelector('.order__terms').textContent + d.querySelector('.order__lead').textContent), 'no percentage in the order form, totals, terms or lead');
+    // the structured data on /info carries the same single price
+    const ld = [...d.querySelectorAll('script[type="application/ld+json"]')].map((s) => s.textContent).join(' ');
+    if (ld.includes('"Offer"')) ok(!/"price":"1499"/.test(ld) && /"price":"999"/.test(ld), 'structured data offers the book at 999, not the old price');
+  }
 
   // the Order received panel names the same payment options as the terms and the email
   {
@@ -155,20 +171,20 @@ function run() {
     ok(box('inside').closest('.pick').querySelector('select').disabled === false, 'its quantity select is enabled');
     ok(JSON.stringify(shown()) === '["inside"]', 'only that book\'s cart row is shown: ' + JSON.stringify(shown()));
     ok(empty.hidden === true, 'the empty line goes away');
-    ok(d.getElementById('totals').hidden === false && count() === '1 book' && d.getElementById('t-sub').textContent === 'BDT 1,499', 'totals recalculated: ' + count() + ', ' + d.getElementById('t-sub').textContent);
+    ok(d.getElementById('totals').hidden === false && count() === '1 book' && d.getElementById('t-sub').textContent === 'BDT 999', 'totals recalculated: ' + count() + ', ' + d.getElementById('t-sub').textContent);
     ok(['original', 'influence', 'shadows'].every((id) => txt(cap(id)) === 'Choose' && cap(id).getAttribute('aria-pressed') === 'false'), 'the other capsules stay Choose');
 
     // the cart follows book order, not choosing order
     press(cap('shadows')); press(cap('original')); press(cap('influence'));
     ok(JSON.stringify(shown()) === '["original","inside","influence","shadows"]', 'cart rows follow book order, not the order chosen: ' + JSON.stringify(shown()));
-    ok(count() === '4 books' && d.getElementById('t-sub').textContent === 'BDT 4,999', 'all four chosen price as the bundle: ' + d.getElementById('t-sub').textContent);
+    ok(count() === '4 books' && d.getElementById('t-sub').textContent === 'BDT 3,996' && d.getElementById('t-grand').textContent === 'BDT 3,899', 'all four chosen price as the set: ' + d.getElementById('t-sub').textContent);
 
     // Remove writes to the checkbox too
     press(rmBtn('original'));
     ok(box('original').checked === false, 'Remove unticks the checkbox');
     ok(txt(cap('original')) === 'Choose' && cap('original').getAttribute('aria-pressed') === 'false', 'and the capsule returns to Choose');
     ok(JSON.stringify(shown()) === '["inside","influence","shadows"]', 'the row leaves the cart: ' + JSON.stringify(shown()));
-    ok(count() === '3 books' && d.getElementById('t-sub').textContent === 'BDT 4,497', 'totals recalculated after Remove: ' + d.getElementById('t-sub').textContent);
+    ok(count() === '3 books' && d.getElementById('t-sub').textContent === 'BDT 2,997', 'totals recalculated after Remove: ' + d.getElementById('t-sub').textContent);
     ok(d.activeElement === rmBtn('inside'), 'focus moves to the next Remove link, not to nowhere');
 
     // pressing Chosen turns it back to Choose
@@ -211,21 +227,23 @@ function run() {
 
   tick(0);
   ok(totals.hidden === false, 'totals appear after choosing a book');
-  ok(d.getElementById('t-sub').textContent === 'BDT 1,499', 'one book subtotal: ' + d.getElementById('t-sub').textContent);
-  ok(d.getElementById('t-save').hidden === true, 'no bundle line for one book');
+  ok(d.getElementById('t-sub').textContent === 'BDT 999', 'one book subtotal: ' + d.getElementById('t-sub').textContent);
+  ok(d.getElementById('t-save').hidden === true && d.getElementById('t-disc').hidden === true, 'no bundle or code line for one book');
+  ok(d.getElementById('t-grand').textContent === 'BDT 1,099', 'one book with delivery: ' + d.getElementById('t-grand').textContent);
 
   tick(1); tick(2); tick(3);
-  ok(d.getElementById('t-sub').textContent === 'BDT 4,999', 'all four subtotal: ' + d.getElementById('t-sub').textContent);
+  ok(d.getElementById('t-sub').textContent === 'BDT 3,996', 'all four subtotal, every book at 999: ' + d.getElementById('t-sub').textContent);
   ok(d.getElementById('t-save').hidden === false, 'bundle line shows for all four');
-  ok(d.getElementById('t-save-val').textContent.includes('997'), 'bundle saving 997: ' + d.getElementById('t-save-val').textContent);
-  ok(d.getElementById('t-grand').textContent === 'BDT 5,099', 'grand total with delivery: ' + d.getElementById('t-grand').textContent);
+  ok(d.getElementById('t-save-val').textContent === '- BDT 197', 'bundle saving 197 against four singles: ' + d.getElementById('t-save-val').textContent);
+  ok(d.getElementById('t-disc').hidden === true, 'no code line without a code');
+  ok(d.getElementById('t-grand').textContent === 'BDT 3,899', 'grand total with delivery: ' + d.getElementById('t-grand').textContent);
 
   // --- discount code ---
   const codeInput = d.getElementById('o-code');
   const codeBtn = d.getElementById('code-go');
   const codeMsg = d.getElementById('code-msg');
   ok(!!codeInput && !!codeBtn, 'discount code field present');
-  ok(!d.documentElement.innerHTML.includes('PREORDER20'), 'the code itself is NOT in the page source');
+  ok(!/SAKURA30|SAKURA25|PREORDER20/i.test(d.documentElement.innerHTML), 'no discount code appears in the page source');
 
   codeInput.value = 'WRONGCODE';
   codeBtn.dispatchEvent(new window.Event('click', { bubbles: true }));

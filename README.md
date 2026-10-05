@@ -84,8 +84,10 @@ Add to Vercel:
 
 | Name | Value |
 |---|---|
-| `ORDER_CODES` | comma separated, e.g. `PREORDER20,FRIENDS` |
-| `ORDER_CODE_PERCENT` | whole number, defaults to `20` |
+| `ORDER_CODES` | comma separated, e.g. `SAKURA30,FRIENDS` |
+
+A code does not take a percentage off. It switches the order to the fixed
+code prices listed under Prices below, so every code gives the same prices.
 
 The codes exist only here. They are never written into the pages, so a
 buyer cannot find one by reading the source. The browser asks
@@ -108,20 +110,33 @@ the book title rather than a broken image.
 
 ## Prices
 
-| | |
-|---|---|
-| Single | BDT 1,499, down from BDT 1,999 |
-| All four | BDT 4,999, saving BDT 997 |
-| Discount code | 20% off the books, delivery excluded |
-| Delivery | about BDT 100, Pathao, inside Dhaka |
+All fixed amounts in BDT, no percentages.
 
-A complete set of four is billed as a bundle and any extras as singles.
+| | No code | With a code |
+|---|---|---|
+| One book | 999 | 699 |
+| All four | 3,799, against 3,996 for four singles | 2,499 |
+| RRP, struck through on the cards | 1,499 | |
+| Floor | never less than 599 a book | |
+| Delivery | about 100, Pathao, inside Dhaka, never discounted | |
+
+Each complete set of four is priced as a set and any extras as singles, at
+the code prices when a valid code is applied. The totals show the saving
+against every book at 999: a "Bundle" line when only the bundle applies, a
+"Code" line when only the code applies, and both when both do.
+
+The floor is a guard, not something that fires at these prices (2,499 for
+four is 625 a book). If a price change ever pushes the books under 599 each,
+the server charges the floor instead and writes a `PRICE FLOOR applied`
+warning, with the order reference, to the function log.
+
 The browser shows this arithmetic, but `api/order.js` recalculates it and
 that result is what goes in the emails, so an edited page cannot change a
 price.
 
-Changing a price means editing `PRICE` and `BUNDLE` in `api/order.js` and
-the matching constants in both pages' pre-order scripts.
+Changing a price means editing `SINGLE`, `SINGLE_CODE`, `SET`, `SET_CODE`,
+`WAS` and `FLOOR` in `api/order.js`, the matching constants in both pages'
+pre-order scripts, and the price copy in both pages.
 
 ## Tests
 
@@ -135,8 +150,9 @@ node tests/api.test.js
 ```
 
 Everything should pass before any commit. The suite covers the order
-form, bundle pricing, discount codes, validation, price tampering,
-the honeypot, Turnstile and the order log.
+form, set and code pricing, the price floor, that the pages and the server
+agree on every total, discount codes, validation, price tampering, the
+honeypot, Turnstile and the order log.
 
 ## Everything else personal
 

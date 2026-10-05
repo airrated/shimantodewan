@@ -17,8 +17,8 @@ const dom = new JSDOM(fs.readFileSync(file, 'utf8'), {
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
-        const good = String(sent.code).trim().toUpperCase() === 'PREORDER20';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good, percent: good ? 20 : 0 }) });
+        const good = String(sent.code).trim().toUpperCase() === 'SAKURA30';
+        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
@@ -36,12 +36,22 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   window.dispatchEvent(new window.Event('load'));
   await wait(50);
 
-  ok(!d.documentElement.innerHTML.includes('PREORDER20'), 'the code never appears in the page source');
+  ok(!d.documentElement.innerHTML.includes('SAKURA30'), 'the code never appears in the page source');
 
   const boxes = [...d.querySelectorAll('input[name="book"]')];
-  boxes.forEach(b => { b.checked = true; b.dispatchEvent(new window.Event('change', { bubbles:true })); });
-  ok(d.getElementById('t-sub').textContent === 'BDT 4,999', 'all four before any code');
-  ok(d.getElementById('t-grand').textContent === 'BDT 5,099', 'grand total before any code');
+  const fire = (el) => el.dispatchEvent(new window.Event('change', { bubbles:true }));
+  const only = (qty) => boxes.forEach(b => {   // qty: { id: n }, everything else unticked
+    const n = qty[b.value] || 0;
+    b.checked = n > 0; fire(b);
+    if (n) { const s = b.closest('.pick').querySelector('select'); s.value = String(n); fire(s); }
+  });
+  const money = (id) => d.getElementById(id).textContent;
+  boxes.forEach(b => { b.checked = true; fire(b); });
+  ok(money('t-sub') === 'BDT 3,996', 'all four before any code, every book counted at 999: ' + money('t-sub'));
+  ok(d.getElementById('t-save').hidden === false && money('t-save-val') === '- BDT 197', 'bundle line shows 197 against four singles: ' + money('t-save-val'));
+  ok(d.querySelector('#t-save > span').textContent === 'Bundle', 'and it is labelled Bundle: ' + d.querySelector('#t-save > span').textContent);
+  ok(d.getElementById('t-disc').hidden === true, 'no code line before any code');
+  ok(money('t-grand') === 'BDT 3,899', 'grand total before any code: ' + money('t-grand'));
 
   const input = d.getElementById('o-code'), btn = d.getElementById('code-go');
 
@@ -50,16 +60,35 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   await wait(40);
   ok(d.getElementById('code-msg').textContent === 'That code is not recognised', 'wrong code rejected');
   ok(d.getElementById('t-disc').hidden === true, 'no discount row for a wrong code');
-  ok(d.getElementById('t-grand').textContent === 'BDT 5,099', 'total unchanged by a wrong code');
+  ok(money('t-grand') === 'BDT 3,899', 'total unchanged by a wrong code');
 
   input.readOnly = false;
-  input.value = 'preorder20';   // lower case on purpose
+  input.value = 'sakura30';   // lower case on purpose
   btn.dispatchEvent(new window.Event('click', { bubbles:true }));
   await wait(40);
-  ok(d.getElementById('code-msg').textContent === '20% off applied', 'valid code accepted, case insensitive');
-  ok(d.getElementById('t-disc').hidden === false, 'discount row appears');
-  ok(d.getElementById('t-disc-val').textContent === '- BDT 1,000', 'twenty percent of 4,999: ' + d.getElementById('t-disc-val').textContent);
-  ok(d.getElementById('t-grand').textContent === 'BDT 4,099', 'grand total after discount: ' + d.getElementById('t-grand').textContent);
+  ok(d.getElementById('code-msg').textContent === 'Code applied', 'valid code accepted, case insensitive: ' + d.getElementById('code-msg').textContent);
+  ok(!/%/.test(d.getElementById('code-msg').textContent), 'the message states no percentage');
+  ok(d.getElementById('t-disc').hidden === false, 'code row appears');
+  ok(d.getElementById('t-disc-label').textContent === 'Code SAKURA30', 'code row is labelled Code SAKURA30: ' + d.getElementById('t-disc-label').textContent);
+  ok(money('t-disc-val') === '- BDT 1,300', 'code takes 1,300 off the set, 3,799 to 2,499: ' + money('t-disc-val'));
+  ok(d.getElementById('t-save').hidden === false && money('t-save-val') === '- BDT 197', 'both lines show when both apply, bundle still 197');
+  ok(money('t-sub') === 'BDT 3,996', 'the base line stays every book at 999');
+  ok(money('t-grand') === 'BDT 2,599', 'grand total with code: ' + money('t-grand'));
+  ok(!/%/.test(d.getElementById('totals').textContent), 'no percentage anywhere in the totals');
+
+  // one book with the code: only the Code line, no bundle
+  only({ shadows: 1 });
+  ok(money('t-sub') === 'BDT 999' && d.getElementById('t-save').hidden === true, 'one book with code: base 999 and no bundle line');
+  ok(money('t-disc-val') === '- BDT 300' && money('t-grand') === 'BDT 799', 'one book with code: code line 300, total 799 with delivery: ' + money('t-disc-val') + ', ' + money('t-grand'));
+
+  // five books with the code: a set plus one single, so the set-plus-singles maths is exercised
+  only({ original: 2, inside: 1, influence: 1, shadows: 1 });
+  ok(money('t-sub') === 'BDT 4,995', 'five books: base is five at 999: ' + money('t-sub'));
+  ok(money('t-save-val') === '- BDT 197' && money('t-disc-val') === '- BDT 1,600', 'five books with code: bundle 197 and code 1,600: ' + money('t-save-val') + ', ' + money('t-disc-val'));
+  ok(money('t-grand') === 'BDT 3,298', 'five books with code: 2,499 + 699 + 100 delivery: ' + money('t-grand'));
+
+  // back to all four for the submit below
+  only({ original: 1, inside: 1, influence: 1, shadows: 1 });
 
   d.getElementById('o-name').value = 'Rifat Hossain';
   d.getElementById('o-phone').value = '01712345678';
@@ -67,7 +96,7 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   d.getElementById('o-addr').value = 'House 4, Road 11, Banani, Dhaka 1213';
   d.getElementById('order-form').dispatchEvent(new window.Event('submit', { bubbles:true, cancelable:true }));
   await wait(60);
-  ok(posted && posted.code === 'PREORDER20', 'code sent with the order: ' + (posted && posted.code));
+  ok(posted && posted.code === 'SAKURA30', 'code sent with the order: ' + (posted && posted.code));
 
   console.log('\n' + (fails.length ? fails.length + ' FAILURES' : 'all code checks passed'));
   process.exit(fails.length ? 1 : 0);

@@ -10,14 +10,16 @@
      ORDER_TO_CC      optional second address that gets the same owner email
 
    Prices live here, not in the browser, so a tampered form cannot change them.
+   Every price is a fixed amount in BDT: there are no percentages anywhere.
    ========================================================================== */
 
 const codes = require("../lib/codes");
 
-const PRICE = 1499;
-const WAS = 1999;
-const BUNDLE = 4999;          // all four together, instead of 5,996
-const DELIVERY = 100;
+const WAS = 1499;                         // RRP, struck through on the cards
+const SINGLE = 999, SINGLE_CODE = 699;    // one book, without and with a valid code
+const SET = 3799, SET_CODE = 2499;        // all four together, without and with a code
+const FLOOR = 599;                        // never charge less than this per book
+const DELIVERY = 100;                     // never discounted
 const DELIVERY_DAYS = "5 to 7 working days";
 
 // Set this once you know when printing finishes, e.g. "late November 2026".
@@ -33,23 +35,31 @@ const CATALOGUE = {
 
 const money = (n) => "BDT " + n.toLocaleString("en-US");
 
-// A complete set of four is priced as a bundle; leftovers are singles.
-// The browser shows the same arithmetic, but this is the copy that counts.
-function priceOrder(items, pct) {
+// Each complete set of four is priced as a set and the rest as singles; a
+// valid code swaps in the code prices. The browser shows the same arithmetic,
+// but this is the copy that counts.
+function priceOrder(items, withCode) {
   const qty = {};
   items.forEach((i) => { qty[i.id] = (qty[i.id] || 0) + i.qty; });
   const ids = Object.keys(CATALOGUE);
   const sets = ids.every((id) => qty[id]) ? Math.min(...ids.map((id) => qty[id])) : 0;
   const units = items.reduce((a, i) => a + i.qty, 0);
   const singles = units - sets * 4;
-  const subtotal = sets * BUNDLE + singles * PRICE;
-  const discount = Math.round(subtotal * (pct || 0) / 100);
-  return {
-    units, sets, singles, subtotal,
-    saving: sets * (4 * PRICE - BUNDLE),
-    discount,
-    payable: subtotal - discount,
-  };
+  const computed = sets * (withCode ? SET_CODE : SET) + singles * (withCode ? SINGLE_CODE : SINGLE);
+
+  // Hard floor, whatever the prices above say: never less than FLOOR a book.
+  // At today's prices it cannot bind; it guards against a later price change.
+  const floor = FLOOR * units;
+  const clamped = computed < floor;
+  const payable = clamped ? floor : computed;
+
+  // Savings are measured against every book at the single price, so the
+  // lines always add up to what is charged, floor or not
+  const baseline = units * SINGLE;
+  const saved = Math.max(0, baseline - payable);
+  const bundleSaving = Math.min(saved, Math.max(0, sets * (4 * SINGLE - SET)));
+  const codeSaving = saved - bundleSaving;
+  return { units, sets, singles, baseline, bundleSaving, codeSaving, computed, floor, clamped, payable };
 }
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
@@ -113,23 +123,23 @@ function itemRows(o) {
         ${esc(i.title)}
       </td>
       <td style="padding:10px 0;border-bottom:1px solid #DED3C6;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;text-align:right;white-space:nowrap;">
-        &times;${i.qty} &nbsp; ${money(i.qty * PRICE)}
+        &times;${i.qty} &nbsp; ${money(i.qty * SINGLE)}
       </td>
     </tr>`).join("");
 }
 
 function totalsRows(o) {
-  const discount = o.discount ? `
+  const code = o.codeSaving ? `
     <tr>
-      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;">Code ${esc(o.code)}, ${o.codePercent}% off</td>
-      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;text-align:right;">- ${money(o.discount)}</td>
+      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;">Code ${esc(o.code)}</td>
+      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;text-align:right;">- ${money(o.codeSaving)}</td>
     </tr>` : "";
-  const saving = o.saving ? `
+  const bundle = o.bundleSaving ? `
     <tr>
-      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;">Bundle, all four &times;${o.sets}</td>
-      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;text-align:right;">- ${money(o.saving)}</td>
+      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;">Bundle</td>
+      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#96382A;text-align:right;">- ${money(o.bundleSaving)}</td>
     </tr>` : "";
-  return saving + discount + `
+  return bundle + code + `
     <tr>
       <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;">Delivery, Pathao, approx.</td>
       <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;text-align:right;">${money(DELIVERY)}</td>
@@ -144,9 +154,9 @@ function totalsRows(o) {
 // owner and buyer copies come from one place, as the HTML ones do
 function orderLines(o) {
   return [
-    ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * PRICE)),
-    ...(o.saving ? ["  Bundle, all four x" + o.sets + ":  - " + money(o.saving)] : []),
-    ...(o.discount ? ["  Code " + o.code + ", " + o.codePercent + "% off:  - " + money(o.discount)] : []),
+    ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * SINGLE)),
+    ...(o.bundleSaving ? ["  Bundle:  - " + money(o.bundleSaving)] : []),
+    ...(o.codeSaving ? ["  Code " + o.code + ":  - " + money(o.codeSaving)] : []),
     "  Books total: " + money(o.payable),
     "  Delivery, approx: " + money(DELIVERY),
     "  Approximate total: " + money(o.payable + DELIVERY),
@@ -284,7 +294,7 @@ function emailHtml(o) {
       </td></tr>
 
       <tr><td style="padding-top:26px;font-family:'Courier New',monospace;font-size:11px;line-height:1.9;letter-spacing:1px;color:#6E655C;">
-        PRE-ORDER PRICE ${money(PRICE)} &nbsp;&middot;&nbsp; RRP ${money(WAS)}<br>
+        PRE-ORDER PRICE ${money(SINGLE)} &nbsp;&middot;&nbsp; RRP ${money(WAS)}<br>
         DELIVERY ${DELIVERY_DAYS.toUpperCase()} &nbsp;&middot;&nbsp; INSIDE DHAKA ONLY<br>
         RECEIVED ${esc(o.at)}<br>
         ${o.buyerSent
@@ -398,16 +408,22 @@ module.exports = async (req, res) => {
 
   // Checked again here: whatever /api/code told the browser is irrelevant
   const codeOk = codes.valid(b.code);
-  const codePercent = codeOk ? codes.percent() : 0;
-  const p = priceOrder(rawItems, codePercent);
+  const p = priceOrder(rawItems, codeOk);
   const order = {
     name, phone, address, email, items,
-    subtotal: p.subtotal, sets: p.sets, saving: p.saving, units: p.units,
-    discount: p.discount, payable: p.payable,
-    code: codeOk ? codes.normalise(b.code) : "", codePercent,
+    units: p.units, sets: p.sets, baseline: p.baseline,
+    bundleSaving: p.bundleSaving, codeSaving: p.codeSaving, payable: p.payable,
+    code: codeOk ? codes.normalise(b.code) : "",
     ref: await claimReference(),
     at: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) + " (Dhaka)",
   };
+
+  // A price changed by the floor must be visible, never silent
+  if (p.clamped) {
+    console.warn("PRICE FLOOR applied to order " + order.ref + ": computed books subtotal "
+      + money(p.computed) + " is under the floor of " + money(p.floor)
+      + " (" + money(FLOOR) + " x " + p.units + " books), so the floor was charged instead.");
+  }
 
   const key = process.env.RESEND_API_KEY;
   const to = process.env.ORDER_TO || "contact@shimantodewan.com";
