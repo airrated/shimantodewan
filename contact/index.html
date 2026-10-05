@@ -1264,15 +1264,16 @@ a{color:inherit;text-decoration:none}
           </div>
 
           <div class="field" id="f-phone">
-            <label class="order__label" for="o-phone">Phone number</label>
+            <label class="order__label" for="o-phone">WhatsApp number</label>
             <input id="o-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" required>
-            <span class="err">Please enter a valid Bangladeshi mobile number</span>
+            <span class="err">Please enter a valid Bangladeshi WhatsApp number</span>
+            <span class="code__msg">I'll message you here to confirm your order.</span>
           </div>
 
           <div class="field" id="f-email">
-            <label class="order__label" for="o-email">Email, for your confirmation</label>
-            <input id="o-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="optional">
-            <span class="err">That email does not look right</span>
+            <label class="order__label" for="o-email">Email</label>
+            <input id="o-email" name="email" type="email" inputmode="email" autocomplete="email" required>
+            <span class="err">Please enter your email so I can send your confirmation</span>
           </div>
 
           <div class="field" id="f-addr">
@@ -1967,8 +1968,7 @@ const ORDER_CONFIG = {
     var email = document.getElementById("o-email").value.trim();
     var digits = phone.replace(/[^0-9]/g, "");
     var phoneOk = /^(?:88)?01[3-9][0-9]{8}$/.test(digits);
-    // Blank is allowed; anything typed has to be usable
-    var emailOk = !email || /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
+    var emailOk = /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
 
     var ok = true;
     ok = bad("f-name", name.length < 2) && ok;

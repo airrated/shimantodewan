@@ -63,6 +63,7 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
   d.getElementById('o-name').value = 'Rifat Hossain';
   d.getElementById('o-phone').value = '01712345678';
+  d.getElementById('o-email').value = 'rifat@example.com';   // required now
   d.getElementById('o-addr').value = 'House 4, Road 11, Banani, Dhaka 1213';
   d.getElementById('order-form').dispatchEvent(new window.Event('submit', { bubbles:true, cancelable:true }));
   await wait(60);

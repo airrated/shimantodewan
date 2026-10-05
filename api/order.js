@@ -7,6 +7,7 @@
 
      RESEND_API_KEY   from resend.com, free tier covers 100 emails a day
      ORDER_TO         where orders land, defaults to contact@shimantodewan.com
+     ORDER_TO_CC      optional second address that gets the same owner email
 
    Prices live here, not in the browser, so a tampered form cannot change them.
    ========================================================================== */
@@ -109,7 +110,7 @@ function totalsRows(o) {
     </tr>`;
 }
 
-// Sent to the buyer, only when they gave an address to send it to
+// Sent to the buyer, whose email is required
 function buyerHtml(o) {
   return shell(`
       <tr><td style="padding-bottom:6px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#96382A;">
@@ -134,7 +135,7 @@ function buyerHtml(o) {
         What happens next
       </td></tr>
       <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#141110;">
-        I will contact you on <b>${esc(o.phone)}</b> to confirm the final total, including the exact
+        I will message you on WhatsApp at <b>${esc(o.phone)}</b> to confirm the final total, including the exact
         delivery charge for your area, and send the bKash details then.
         <b>Please do not send payment before that.</b>
       </td></tr>
@@ -150,6 +151,7 @@ function buyerHtml(o) {
         ${DISPATCH ? "DISPATCH " + esc(DISPATCH.toUpperCase()) + "<br>" : ""}DELIVERY ${DELIVERY_DAYS.toUpperCase()}, INSIDE DHAKA, BY PATHAO<br>
         REFERENCE ${esc(o.ref)}<br>
         CANCEL ANY TIME BEFORE DISPATCH FOR A FULL REFUND<br>
+        To cancel, reply to this email with CANCEL in capitals.<br>
         QUESTIONS, REPLY TO THIS EMAIL
       </td></tr>
       <tr><td style="padding-top:26px;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;">
@@ -174,7 +176,7 @@ function buyerText(o) {
     "  Approximate total: " + money(o.payable + DELIVERY),
     "",
     "What happens next:",
-    "I will contact you on " + o.phone + " to confirm the final total, including the",
+    "I will message you on WhatsApp at " + o.phone + " to confirm the final total, including the",
     "exact delivery charge for your area, and send the bKash details then.",
     "Please do not send payment before that.",
     "",
@@ -184,6 +186,7 @@ function buyerText(o) {
     (DISPATCH ? "Dispatch " + DISPATCH + "." : "") ,
     "Delivery " + DELIVERY_DAYS + " from confirmation, inside Dhaka, by Pathao.",
     "You can cancel any time before dispatch for a full refund.",
+    "To cancel, reply to this email with CANCEL in capitals.",
     "",
     "Shimanto Dewan",
     "Behind the Eyes",
@@ -229,8 +232,8 @@ function emailHtml(o) {
       <tr><td style="padding-top:18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           ${field("Name", o.name)}
-          ${field("Phone", o.phone)}
-          ${o.email ? field("Email", o.email) : ""}
+          ${field("WhatsApp", o.phone)}
+          ${field("Email", o.email)}
           ${field("Delivery address", o.address)}
         </table>
       </td></tr>
@@ -255,7 +258,7 @@ function emailHtml(o) {
         PRE-ORDER PRICE ${money(PRICE)} &nbsp;&middot;&nbsp; RRP ${money(WAS)}<br>
         DELIVERY ${DELIVERY_DAYS.toUpperCase()} &nbsp;&middot;&nbsp; INSIDE DHAKA ONLY<br>
         RECEIVED ${esc(o.at)}<br>
-        ${o.email ? "CONFIRMATION SENT TO BUYER" : "NO BUYER EMAIL GIVEN"}
+        CONFIRMATION SENT TO BUYER
       </td></tr>
 
     </table>
@@ -270,10 +273,10 @@ function emailText(o) {
     "",
     "Reference: " + o.ref,
     "",
-    "Name:    " + o.name,
-    "Phone:   " + o.phone,
-    "Email:   " + (o.email || "not given"),
-    "Address: " + o.address,
+    "Name:     " + o.name,
+    "WhatsApp: " + o.phone,
+    "Email:    " + o.email,
+    "Address:  " + o.address,
     "",
     "Books:",
     ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * PRICE)),
@@ -347,8 +350,8 @@ module.exports = async (req, res) => {
   if (name.length < 2 || name.length > 80) errors.push("name");
   if (!/^(?:88)?01[3-9][0-9]{8}$/.test(digits)) errors.push("phone");
   if (address.length < 10 || address.length > 500) errors.push("address");
-  // Optional, but if given it has to be usable or the buyer gets no confirmation
-  if (email && (email.length > 120 || !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email))) errors.push("email");
+  // Required: it is where the buyer's confirmation goes
+  if (!email || email.length > 120 || !/^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email)) errors.push("email");
 
   const rawItems = Array.isArray(b.items) ? b.items
     .map((i) => ({
@@ -382,6 +385,8 @@ module.exports = async (req, res) => {
 
   const key = process.env.RESEND_API_KEY;
   const to = process.env.ORDER_TO || "contact@shimantodewan.com";
+  const cc = (process.env.ORDER_TO_CC || "").trim();
+  const ownerTo = [to, cc].filter((a, i, all) => a && all.indexOf(a) === i);
   const from = process.env.ORDER_FROM || "Pre-orders <onboarding@resend.dev>";
 
   if (!key) {
@@ -394,7 +399,7 @@ module.exports = async (req, res) => {
       method: "POST",
       headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
       body: JSON.stringify({
-        from, to: [to],
+        from, to: ownerTo,
         reply_to: email || undefined,          // so a reply reaches the buyer
         subject: "Pre-order " + order.ref + " - " + name + " - "
                  + items.reduce((a, i) => a + i.qty, 0) + " book(s)",
@@ -414,22 +419,20 @@ module.exports = async (req, res) => {
 
   // The buyer's copy is best effort: the order is already safely with
   // Shimanto, so a failure here must not tell the buyer it did not work.
-  if (email) {
-    try {
-      const c = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
-        body: JSON.stringify({
-          from, to: [email], reply_to: to,
-          subject: "Your pre-order " + order.ref + " - Behind the Eyes",
-          html: buyerHtml(order),
-          text: buyerText(order),
-        }),
-      });
-      if (!c.ok) console.error("Buyer confirmation failed:", c.status, await c.text());
-    } catch (err) {
-      console.error("Buyer confirmation threw:", err);
-    }
+  try {
+    const c = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from, to: [email], reply_to: to,
+        subject: "Your pre-order " + order.ref + " - Behind the Eyes",
+        html: buyerHtml(order),
+        text: buyerText(order),
+      }),
+    });
+    if (!c.ok) console.error("Buyer confirmation failed:", c.status, await c.text());
+  } catch (err) {
+    console.error("Buyer confirmation threw:", err);
   }
 
   await record(order);

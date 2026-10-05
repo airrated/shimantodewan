@@ -89,7 +89,22 @@ function run() {
   ok(d.getElementById('f-name').classList.contains('is-bad'), 'empty name flagged');
   ok(d.getElementById('f-phone').classList.contains('is-bad'), 'empty phone flagged');
   ok(d.getElementById('f-addr').classList.contains('is-bad'), 'empty address flagged');
+  ok(d.getElementById('f-email').classList.contains('is-bad'), 'empty email flagged, it is required');
   ok(posted === null, 'nothing posted while invalid');
+
+  // labels, hint and required markers for the contact fields
+  const label = (id) => d.querySelector('label[for="' + id + '"]').textContent.trim();
+  const errText = (id) => d.querySelector('#' + id + ' .err').textContent.trim();
+  const emailEl = d.getElementById('o-email');
+  ok(label('o-email') === 'Email', 'email label is just Email: ' + label('o-email'));
+  ok(emailEl.hasAttribute('required'), 'email input marked required');
+  ok(!emailEl.hasAttribute('placeholder'), 'email placeholder "optional" removed');
+  ok(errText('f-email') === 'Please enter your email so I can send your confirmation', 'email error text: ' + errText('f-email'));
+  ok(label('o-phone') === 'WhatsApp number', 'phone label is WhatsApp number: ' + label('o-phone'));
+  ok(errText('f-phone') === 'Please enter a valid Bangladeshi WhatsApp number', 'phone error text: ' + errText('f-phone'));
+  const hint = d.querySelector('#f-phone .code__msg');
+  ok(!!hint && hint.textContent.trim() === "I'll message you here to confirm your order.", 'WhatsApp hint line present');
+  ok(!/Phone number|for your confirmation/.test(d.getElementById('order-form').textContent), 'old field wording gone from the form');
 
   // bad email specifically (code checks resume after the awaits below)
   d.getElementById('o-name').value = 'Rifat Hossain';
@@ -99,6 +114,12 @@ function run() {
   d.getElementById('order-form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
   ok(d.getElementById('f-email').classList.contains('is-bad'), 'malformed email flagged');
   ok(posted === null, 'still nothing posted');
+
+  // blank email is no longer allowed even when everything else is fine
+  d.getElementById('o-email').value = '';
+  d.getElementById('order-form').dispatchEvent(new window.Event('submit', { bubbles: true, cancelable: true }));
+  ok(d.getElementById('f-email').classList.contains('is-bad'), 'blank email flagged with everything else valid');
+  ok(posted === null, 'blank email blocks the submit');
 
   // valid submit
   d.getElementById('o-email').value = 'rifat@example.com';

@@ -26,6 +26,10 @@ Vercel, Settings, Environment Variables. Add, then redeploy.
 | `RESEND_API_KEY` | from resend.com, free tier is 100 emails a day |
 | `ORDER_TO` | contact@shimantodewan.com |
 
+Optional `ORDER_TO_CC`: a second address that receives the same order
+email. Leave it unset to send to `ORDER_TO` only. The buyer's confirmation
+is never copied to it.
+
 Optional `ORDER_FROM`. Defaults to Resend's shared test sender, which works
 at once but often lands in spam. Verify shimantodewan.com in Resend, then
 set `ORDER_FROM` to `Pre-orders <orders@shimantodewan.com>`.
