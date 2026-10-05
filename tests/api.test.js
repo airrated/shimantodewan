@@ -93,12 +93,23 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     ok(buyer.text.includes('I will message you on WhatsApp at 01712345678'), 'buyer text says message on WhatsApp');
     ok(buyer.html.includes('I will message you on WhatsApp at <b>01712345678</b>'), 'buyer html says message on WhatsApp');
     ok(!/I will contact you/.test(buyer.text + buyer.html), 'old "contact you on" wording gone');
-    ok(buyer.text.includes('To cancel, reply to this email with CANCEL in capitals.'), 'cancel instruction in buyer text');
-    ok(buyer.html.includes('TO CANCEL, REPLY TO THIS EMAIL WITH CANCEL IN CAPITALS.'), 'cancel instruction in buyer html is in the footer\'s capitals');
-    ok(!buyer.html.includes('To cancel, reply'), 'buyer html has no sentence-case copy of it');
-    ok(!buyer.text.includes('TO CANCEL, REPLY'), 'buyer text keeps sentence case');
-    ok(buyer.text.indexOf('To cancel, reply') > buyer.text.indexOf('cancel any time before dispatch'), 'cancel instruction follows the existing cancellation line');
-    ok(!/CANCEL IN CAPITALS|CANCEL in capitals/i.test(owner.text + owner.html), 'cancel instruction is for the buyer only');
+    // the cancel instruction is its own block in the body, stated once
+    const plain = buyer.html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+    const at = (s, needle) => s.indexOf(needle);
+    ok(buyer.html.includes('CHANGED YOUR MIND'), 'buyer html has the CHANGED YOUR MIND label');
+    ok(buyer.html.includes('Reply to this email with the word <b style="color:#96382A;">CANCEL</b> in capitals'), 'CANCEL is bold in the accent colour');
+    ok(/Reply to this email with the word CANCEL in capitals, any time before your order goes out\. No payment, no questions\./.test(plain), 'buyer html cancel wording is exact');
+    ok(at(buyer.html, 'CHANGED YOUR MIND') > at(buyer.html, 'Please do not send payment') && at(buyer.html, 'CHANGED YOUR MIND') < at(buyer.html, 'Delivering to'), 'cancel block sits directly below What happens next');
+    ok(/border-top:1px solid #DED3C6[^>]*>\s*CHANGED YOUR MIND/.test(buyer.html), 'thin rule above the cancel block');
+    ok(/font-size:16px;line-height:1\.65[^>]*>\s*Reply to this email with the word/.test(buyer.html), 'cancel text is in the body serif at reading size');
+    ok(!/TO CANCEL, REPLY/i.test(buyer.html), 'footer metadata no longer carries a cancel instruction');
+    ok((buyer.html.match(/in capitals/g) || []).length === 1, 'buyer html states it once');
+    ok(buyer.html.includes('CANCEL ANY TIME BEFORE DISPATCH FOR A FULL REFUND'), 'existing refund line left in the footer');
+    ok(/\n\nChanged your mind\? Reply to this email with the word CANCEL in capitals, any time\nbefore your order goes out\. No payment, no questions\.\n\n/.test(buyer.text), 'buyer text has the paragraph with a blank line either side');
+    ok(at(buyer.text, 'Changed your mind?') > at(buyer.text, 'Please do not send payment') && at(buyer.text, 'Changed your mind?') < at(buyer.text, 'Delivering to:'), 'text paragraph follows What happens next');
+    ok(!/To cancel, reply/i.test(buyer.text), 'trailing text lines no longer carry the old cancel line');
+    ok((buyer.text.match(/in capitals/g) || []).length === 1, 'buyer text states it once');
+    ok(!/in capitals/i.test(owner.text + owner.html), 'cancel instruction is for the buyer only');
   }
 
   // --- second notification address ---------------------------------------
@@ -142,6 +153,54 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     ok(r.code === 400, 'order without email rejected', 'got ' + r.code);
     ok(r.body && Array.isArray(r.body.errors) && r.body.errors.includes('email'), 'missing email reported as an email error');
     ok(calls.filter(c => c.url.includes('resend')).length === 0, 'nothing is sent for an order without email');
+  }
+
+  // --- owner and buyer emails show the same numbers --------------------------
+  // Both are built from the same helpers, so they cannot disagree. This is the
+  // check that would have caught the owner email ignoring bundle and discount.
+  {
+    const four = [{id:'original',qty:1},{id:'inside',qty:1},{id:'influence',qty:1},{id:'shadows',qty:1}];
+    const codeEnv = { ...ENV, ORDER_CODES: 'PREORDER20', ORDER_CODE_PERCENT: '20' };
+    const cases = [
+      { label: 'a single book',                 env: ENV,     body: { items: [{id:'shadows',qty:1}] },        grand: 1599, bundle: false, discount: false },
+      { label: 'all four with the bundle',      env: ENV,     body: { items: four },                          grand: 5099, bundle: true,  discount: false },
+      { label: 'all four with a discount code', env: codeEnv, body: { items: four, code: 'preorder20' },      grand: 4099, bundle: true,  discount: true  },
+    ];
+    const flat = (h) => h.replace(/<[^>]+>/g, ' ').replace(/&times;/g, 'x').replace(/&nbsp;/g, ' ').replace(/&middot;/g, ' ').replace(/\s+/g, ' ');
+    const num = (m) => (m ? Number(m[1].replace(/,/g, '')) : NaN);
+    const sumItems = (s) => [...s.matchAll(/x\d+ BDT ([\d,]+)/g)].reduce((a, m) => a + Number(m[1].replace(/,/g, '')), 0);
+    const moneyLines = (t) => t.split('\n').filter((l) => /^  \S.*BDT/.test(l));
+
+    for (const c of cases) {
+      const { handler, calls } = load(c.env);
+      const r = res();
+      await handler({ method:'POST', headers:{}, body:{ name:'Rifat Hossain', phone:'01712345678', email:'rifat@example.com',
+        address:'House 4, Road 11, Banani, Dhaka 1213', ...c.body } }, r);
+      const owner = ownerOf(calls), buyer = buyerOf(calls);
+      const oh = flat(owner.html), bh = flat(buyer.html);
+
+      const grandOf = (s) => num(s.match(/Approximate total BDT ([\d,]+)/));
+      const grandText = (t) => num(t.match(/Approximate total: BDT ([\d,]+)/));
+      ok(grandOf(oh) === c.grand, c.label + ': owner html grand total', 'BDT ' + grandOf(oh));
+      ok(grandOf(bh) === c.grand, c.label + ': buyer html grand total', 'BDT ' + grandOf(bh));
+      ok(grandText(owner.text) === c.grand, c.label + ': owner text grand total', 'BDT ' + grandText(owner.text));
+      ok(grandText(buyer.text) === c.grand, c.label + ': buyer text grand total', 'BDT ' + grandText(buyer.text));
+
+      // the lines shown must add up to the total shown, in each HTML email
+      for (const [who, s] of [['owner', oh], ['buyer', bh]]) {
+        const saving = num(s.match(/Bundle, all four x\d+ - BDT ([\d,]+)/)) || 0;
+        const disc = num(s.match(/% off - BDT ([\d,]+)/)) || 0;
+        const delivery = num(s.match(/Delivery, Pathao, approx\. BDT ([\d,]+)/));
+        const shown = sumItems(s) - saving - disc + delivery;
+        ok(shown === c.grand, c.label + ': ' + who + ' html lines add up to the total', shown + ' vs ' + c.grand);
+        ok(/Bundle, all four/.test(s) === c.bundle, c.label + ': ' + who + ' html bundle row ' + (c.bundle ? 'shown' : 'absent'));
+        ok(/% off/.test(s) === c.discount, c.label + ': ' + who + ' html discount row ' + (c.discount ? 'shown' : 'absent'));
+      }
+
+      // and the plain-text order blocks are identical, line for line
+      ok(moneyLines(owner.text).length > 0 && JSON.stringify(moneyLines(owner.text)) === JSON.stringify(moneyLines(buyer.text)),
+         c.label + ': owner and buyer text show identical order lines');
+    }
   }
 
   // --- the owner email reports what happened to the buyer's copy ------------
@@ -282,7 +341,7 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     const ma = ownerOf(a.calls);
     ok(ra.code === 200, 'order with a valid code accepted');
     ok(ma.text.includes('- BDT 1,000'), 'twenty percent taken off in the email');
-    ok(ma.text.includes('BDT 3,999'), 'books total after discount', ma.text.match(/Books:.*/)[0]);
+    ok(ma.text.includes('BDT 3,999'), 'books total after discount', (ma.text.match(/Books total:.*/) || [''])[0]);
     ok(ma.text.includes('BDT 4,099'), 'grand total after discount');
 
     // a wrong code must change nothing

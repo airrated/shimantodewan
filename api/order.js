@@ -110,6 +110,19 @@ function totalsRows(o) {
     </tr>`;
 }
 
+// Item, bundle, discount and total lines for both plain-text emails, so the
+// owner and buyer copies come from one place, as the HTML ones do
+function orderLines(o) {
+  return [
+    ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * PRICE)),
+    ...(o.saving ? ["  Bundle, all four x" + o.sets + ":  - " + money(o.saving)] : []),
+    ...(o.discount ? ["  Code " + o.code + ", " + o.codePercent + "% off:  - " + money(o.discount)] : []),
+    "  Books total: " + money(o.payable),
+    "  Delivery, approx: " + money(DELIVERY),
+    "  Approximate total: " + money(o.payable + DELIVERY),
+  ];
+}
+
 // Sent to the buyer, whose email is required
 function buyerHtml(o) {
   return shell(`
@@ -134,10 +147,18 @@ function buyerHtml(o) {
       <tr><td style="padding:24px 0 8px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6E655C;">
         What happens next
       </td></tr>
-      <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#141110;">
+      <tr><td style="padding-bottom:22px;font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#141110;">
         I will message you on WhatsApp at <b>${esc(o.phone)}</b> to confirm the final total, including the exact
         delivery charge for your area, and send the bKash details then.
         <b>Please do not send payment before that.</b>
+      </td></tr>
+
+      <tr><td style="padding:22px 0 8px;border-top:1px solid #DED3C6;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6E655C;">
+        CHANGED YOUR MIND
+      </td></tr>
+      <tr><td style="font-family:Georgia,'Times New Roman',serif;font-size:16px;line-height:1.65;color:#141110;">
+        Reply to this email with the word <b style="color:#96382A;">CANCEL</b> in capitals, any time
+        before your order goes out. No payment, no questions.
       </td></tr>
 
       <tr><td style="padding:22px 0 8px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6E655C;">
@@ -151,7 +172,6 @@ function buyerHtml(o) {
         ${DISPATCH ? "DISPATCH " + esc(DISPATCH.toUpperCase()) + "<br>" : ""}DELIVERY ${DELIVERY_DAYS.toUpperCase()}, INSIDE DHAKA, BY PATHAO<br>
         REFERENCE ${esc(o.ref)}<br>
         CANCEL ANY TIME BEFORE DISPATCH FOR A FULL REFUND<br>
-        TO CANCEL, REPLY TO THIS EMAIL WITH CANCEL IN CAPITALS.<br>
         QUESTIONS, REPLY TO THIS EMAIL
       </td></tr>
       <tr><td style="padding-top:26px;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;">
@@ -168,17 +188,15 @@ function buyerText(o) {
     "Reference: " + o.ref,
     "",
     "Your order:",
-    ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * PRICE)),
-    ...(o.saving ? ["  Bundle, all four x" + o.sets + ":  - " + money(o.saving)] : []),
-    ...(o.discount ? ["  Code " + o.code + ", " + o.codePercent + "% off:  - " + money(o.discount)] : []),
-    "  Books total: " + money(o.payable),
-    "  Delivery, approx: " + money(DELIVERY),
-    "  Approximate total: " + money(o.payable + DELIVERY),
+    ...orderLines(o),
     "",
     "What happens next:",
     "I will message you on WhatsApp at " + o.phone + " to confirm the final total, including the",
     "exact delivery charge for your area, and send the bKash details then.",
     "Please do not send payment before that.",
+    "",
+    "Changed your mind? Reply to this email with the word CANCEL in capitals, any time",
+    "before your order goes out. No payment, no questions.",
     "",
     "Delivering to:",
     o.address,
@@ -186,7 +204,6 @@ function buyerText(o) {
     (DISPATCH ? "Dispatch " + DISPATCH + "." : "") ,
     "Delivery " + DELIVERY_DAYS + " from confirmation, inside Dhaka, by Pathao.",
     "You can cancel any time before dispatch for a full refund.",
-    "To cancel, reply to this email with CANCEL in capitals.",
     "",
     "Shimanto Dewan",
     "Behind the Eyes",
@@ -194,16 +211,6 @@ function buyerText(o) {
 }
 
 function emailHtml(o) {
-  const rows = o.items.map((i) => `
-    <tr>
-      <td style="padding:10px 0;border-bottom:1px solid #DED3C6;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;">
-        ${esc(i.title)}
-      </td>
-      <td style="padding:10px 0;border-bottom:1px solid #DED3C6;font-family:Georgia,'Times New Roman',serif;font-size:15px;color:#141110;text-align:right;white-space:nowrap;">
-        &times;${i.qty} &nbsp; ${money(i.qty * PRICE)}
-      </td>
-    </tr>`).join("");
-
   const field = (label, value) => `
     <tr>
       <td style="padding:12px 0 4px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#6E655C;">
@@ -242,16 +249,7 @@ function emailHtml(o) {
         Books
       </td></tr>
       <tr><td>
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rows}
-          <tr>
-            <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;">Delivery, Pathao, approx.</td>
-            <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;text-align:right;">${money(DELIVERY)}</td>
-          </tr>
-          <tr>
-            <td style="padding:12px 0;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#141110;">Approximate total</td>
-            <td style="padding:12px 0;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#96382A;text-align:right;white-space:nowrap;">${money(o.subtotal + DELIVERY)}</td>
-          </tr>
-        </table>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${itemRows(o)}${totalsRows(o)}</table>
       </td></tr>
 
       <tr><td style="padding-top:26px;font-family:'Courier New',monospace;font-size:11px;line-height:1.9;letter-spacing:1px;color:#6E655C;">
@@ -281,13 +279,7 @@ function emailText(o) {
     "Address:  " + o.address,
     "",
     "Books:",
-    ...o.items.map((i) => "  " + i.title + " x" + i.qty + "   " + money(i.qty * PRICE)),
-    ...(o.saving ? ["  Bundle, all four x" + o.sets + ":  - " + money(o.saving)] : []),
-    ...(o.discount ? ["  Code " + o.code + ", " + o.codePercent + "% off:  - " + money(o.discount)] : []),
-    "",
-    "Books:    " + money(o.payable),
-    "Delivery: " + money(DELIVERY) + " (approx, Pathao)",
-    "Total:    " + money(o.payable + DELIVERY),
+    ...orderLines(o),
     "",
     "Delivery " + DELIVERY_DAYS + ", inside Dhaka only.",
     "Received " + o.at,
