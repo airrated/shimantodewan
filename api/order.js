@@ -10,7 +10,8 @@
      ORDER_TO_CC      optional second address that gets the same owner email
 
    Prices live here, not in the browser, so a tampered form cannot change them.
-   Every price is a fixed amount in BDT: there are no percentages anywhere.
+   Every price is a fixed amount in BDT. Discount codes are defined in the
+   environment, one variable per code (see lib/codes.js and the README).
    ========================================================================== */
 
 const codes = require("../lib/codes");
@@ -35,20 +36,25 @@ const CATALOGUE = {
 
 const money = (n) => "BDT " + n.toLocaleString("en-US");
 
-// Each complete set of four is priced as a set and the rest as singles; a
-// valid code swaps in the code prices. The browser shows the same arithmetic,
-// but this is the copy that counts.
-function priceOrder(items, withCode) {
+// Each complete set of four is priced as a set and the rest as singles. A
+// valid code (`offer`, from lib/codes) is one of two kinds: "fixed" swaps in
+// the code prices, "percent" takes that much off the books after the bundle,
+// at normal prices. Only one code applies to an order, so they never stack.
+// The browser shows the same arithmetic, but this is the copy that counts.
+function priceOrder(items, offer) {
   const qty = {};
   items.forEach((i) => { qty[i.id] = (qty[i.id] || 0) + i.qty; });
   const ids = Object.keys(CATALOGUE);
   const sets = ids.every((id) => qty[id]) ? Math.min(...ids.map((id) => qty[id])) : 0;
   const units = items.reduce((a, i) => a + i.qty, 0);
   const singles = units - sets * 4;
-  const computed = sets * (withCode ? SET_CODE : SET) + singles * (withCode ? SINGLE_CODE : SINGLE);
+  const fixed = !!offer && offer.kind === "fixed";
+  let computed = sets * (fixed ? SET_CODE : SET) + singles * (fixed ? SINGLE_CODE : SINGLE);
+  if (offer && offer.kind === "percent") computed -= Math.round(computed * offer.percent / 100);
 
-  // Hard floor, whatever the prices above say: never less than FLOOR a book.
-  // At today's prices it cannot bind; it guards against a later price change.
+  // Hard floor, whatever the prices or the code say: never less than FLOOR a
+  // book, for every outcome. At today's prices it cannot bind; it guards
+  // against a later price change or a large percentage.
   const floor = FLOOR * units;
   const clamped = computed < floor;
   const payable = clamped ? floor : computed;
@@ -407,13 +413,13 @@ module.exports = async (req, res) => {
   if (!human) return res.status(400).json({ ok: false, error: "verification" });
 
   // Checked again here: whatever /api/code told the browser is irrelevant
-  const codeOk = codes.valid(b.code);
-  const p = priceOrder(rawItems, codeOk);
+  const offer = codes.lookup(b.code);
+  const p = priceOrder(rawItems, offer);
   const order = {
     name, phone, address, email, items,
     units: p.units, sets: p.sets, baseline: p.baseline,
     bundleSaving: p.bundleSaving, codeSaving: p.codeSaving, payable: p.payable,
-    code: codeOk ? codes.normalise(b.code) : "",
+    code: offer ? offer.code : "",
     ref: await claimReference(),
     at: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) + " (Dhaka)",
   };

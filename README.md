@@ -78,28 +78,93 @@ Cloudflare, Turnstile, add a widget for shimantodewan.com. Then:
 Until both exist the check is skipped entirely and nothing is loaded from
 Cloudflare. Once the secret is set the server rejects unverified orders.
 
-### 6. Discount code (optional)
+### 6. Discount codes (optional)
 
-Add to Vercel:
+Every discount code is its own variable in Vercel (Settings, Environment
+Variables). The name says which code it is and the value says what it does:
+
+```
+ORDER_CODE_<NAME>   =   what the code does
+```
+
+`<NAME>` is the code buyers type, in capitals, using letters and digits
+(for example `SAKURA30`). The value is exactly one of these two:
+
+| Value | What the code does |
+|---|---|
+| `fixed` | Switches the order to the fixed code prices: 699 a single, 2,499 for all four |
+| `percent:N` | Takes N per cent off the books after any bundle, at normal prices. `N` is a whole number from 1 to 90, for example `percent:20` |
+
+**Set these two today:**
 
 | Name | Value |
 |---|---|
-| `ORDER_CODES` | comma separated, e.g. `SAKURA30,FRIENDS` |
+| `ORDER_CODE_SAKURA30` | `fixed` |
+| `ORDER_CODE_EYES20` | `percent:20` |
 
-A code does not take a percentage off. It switches the order to the fixed
-code prices listed under Prices below, so every code gives the same prices.
+Then **redeploy**. Vercel only applies a changed variable to a new
+deployment (Deployments, the latest one, Redeploy).
 
-The codes exist only here. They are never written into the pages, so a
-buyer cannot find one by reading the source. The browser asks
-`/api/code` whether a typed code is real, and `/api/order` checks it
-again before pricing, so a forged answer in the browser changes nothing.
+The rules:
 
-Codes are matched without regard to case or spaces. With `ORDER_CODES`
-unset every code is politely rejected and the form works as normal.
+- One code per order. The form takes a single code, and codes never stack.
+- Buyers can type the code in any case and with spaces: `eyes 20` is `EYES20`.
+- The 599 a book floor applies to every outcome, and delivery is never
+  discounted.
+- The codes exist only here. They are never written into the pages, so a
+  buyer cannot find one by reading the source. The browser asks `/api/code`
+  whether a typed code is real and what kind it is, and `/api/order` looks it
+  up again before pricing, so a forged answer in the browser changes nothing.
+- A code that does not exist gives no discount, and the form works as normal.
 
-To change or retire a code, edit the variable and redeploy. Nothing in
-the repository needs to change.
+#### Adding a third code
 
+Say you want `FRIENDS10`, ten per cent off:
+
+1. Vercel, your project, Settings, Environment Variables, Add New.
+2. Name `ORDER_CODE_FRIENDS10`, value `percent:10`. Save.
+3. Redeploy.
+4. Try it on the site: type `friends10`, press Apply. You should see "Code
+   applied" and a "Code FRIENDS10" line in the totals.
+
+For another fixed-price code, the value is `fixed`, and it gives the same
+699 and 2,499 as `SAKURA30`.
+
+#### Retiring a code
+
+Say `EYES20` is over:
+
+1. Delete the variable `ORDER_CODE_EYES20`.
+2. Redeploy.
+
+From then on typing `EYES20` shows "That code is not recognised" and gives no
+discount. Orders already placed keep the price they were given.
+
+To change how much a percent code takes off, edit its value (`percent:20`
+to `percent:25`) and redeploy. Nothing in the repository needs to change.
+
+#### If a value is wrong
+
+Say `ORDER_CODE_EYES20` is set to `percent:abc`. That one code is treated as
+if it did not exist: buyers see "not recognised", nobody gets any discount from
+it (it is never read as 0% off, and nothing crashes), and every other code
+keeps working. The function log gets a warning that names the variable and
+the value, for example:
+
+```
+Discount code variable ORDER_CODE_EYES20 is malformed (value: "percent:abc").
+Expected 'fixed' or 'percent:N' with N a whole number from 1 to 90. ...
+```
+
+Find it in Vercel, your project, Logs, by searching for `malformed`. The same
+happens for `percent:0`, `percent:95`, `percent:20.5`, `20`, or an empty
+value. Case and spaces around the colon do not matter (`Percent : 20` is fine).
+
+#### Old variables
+
+`ORDER_CODES` and `ORDER_CODE_PERCENT` from earlier versions are no longer
+read. Delete them from Vercel. (`ORDER_CODE_PERCENT` is ignored on purpose,
+so it is never mistaken for a code called `PERCENT`.)
 ### 7. Book covers
 
 Four images in `images/behind-the-eyes/`, named `original.jpg`,
@@ -110,20 +175,22 @@ the book title rather than a broken image.
 
 ## Prices
 
-All fixed amounts in BDT, no percentages.
+Prices are fixed amounts in BDT. A `fixed` code switches to the code prices; a `percent` code takes a share off the books after the bundle.
 
-| | No code | With a code |
-|---|---|---|
-| One book | 999 | 699 |
-| All four | 3,799, against 3,996 for four singles | 2,499 |
-| RRP, struck through on the cards | 1,499 | |
+| | No code | `fixed` code (SAKURA30) | `percent:20` code (EYES20) |
+|---|---|---|---|
+| One book | 999 | 699 | 799 |
+| All four | 3,799, against 3,996 for four singles | 2,499 | 3,039 |
+| Mixed five (a set and one single) | 4,798 | 3,198 | 3,838 |
+| RRP, struck through on the cards | 1,499 | | |
 | Floor | never less than 599 a book | |
 | Delivery | about 100, Pathao, inside Dhaka, never discounted | |
 
-Each complete set of four is priced as a set and any extras as singles, at
-the code prices when a valid code is applied. The totals show the saving
-against every book at 999: a "Bundle" line when only the bundle applies, a
-"Code" line when only the code applies, and both when both do.
+Each complete set of four is priced as a set and any extras as singles. A
+percent code rounds its discount to the nearest taka (20% of 4,798 is 959.6,
+so 960). The totals show the saving against every book at 999: a "Bundle"
+line when only the bundle applies, a "Code SAKURA30" or "Code EYES20" line when
+only the code applies, and both when both do. Never a percentage.
 
 The floor is a guard, not something that fires at these prices (2,499 for
 four is 625 a book). If a price change ever pushes the books under 599 each,

@@ -17,8 +17,10 @@ const dom = new JSDOM(fs.readFileSync(file, 'utf8'), {
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
-        const good = String(sent.code).trim().toUpperCase() === 'SAKURA30';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good }) });
+        // the same shape api/code.js returns: which kind of discount, and for a percent code which percent
+        const OFFERS = { SAKURA30: { kind:'fixed' }, EYES20: { kind:'percent', percent:20 } };
+        const key = String(sent.code).replace(/\s+/g, '').toUpperCase();
+        return Promise.resolve({ ok:true, json: () => Promise.resolve(OFFERS[key] ? { valid:true, code:key, ...OFFERS[key] } : { valid:false }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
@@ -86,6 +88,39 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   ok(money('t-sub') === 'BDT 4,995', 'five books: base is five at 999: ' + money('t-sub'));
   ok(money('t-save-val') === '- BDT 197' && money('t-disc-val') === '- BDT 1,600', 'five books with code: bundle 197 and code 1,600: ' + money('t-save-val') + ', ' + money('t-disc-val'));
   ok(money('t-grand') === 'BDT 3,298', 'five books with code: 2,499 + 699 + 100 delivery: ' + money('t-grand'));
+
+  // --- EYES20: a different kind of code, 20% off the books after the bundle --------
+  const apply = async (typed) => {
+    input.readOnly = false;
+    input.value = typed;
+    btn.dispatchEvent(new window.Event('click', { bubbles:true }));
+    await wait(40);
+  };
+  await apply('eyes 20');
+  ok(d.getElementById('code-msg').textContent === 'Code applied' && !/%/.test(d.getElementById('code-msg').textContent), 'EYES20 accepted with a space and lower case, no percentage in the message');
+  ok(d.getElementById('t-disc-label').textContent === 'Code EYES20', 'its row is labelled Code EYES20: ' + d.getElementById('t-disc-label').textContent);
+
+  only({ shadows: 1 });
+  ok(money('t-sub') === 'BDT 999' && d.getElementById('t-save').hidden === true, 'EYES20 on one book: base 999, no bundle line');
+  ok(money('t-disc-val') === '- BDT 200' && money('t-grand') === 'BDT 899', 'EYES20 on one book: code line 200, total 899 with delivery: ' + money('t-disc-val') + ', ' + money('t-grand'));
+
+  only({ original: 1, inside: 1, influence: 1, shadows: 1 });
+  ok(money('t-save-val') === '- BDT 197' && money('t-disc-val') === '- BDT 760', 'EYES20 on four: bundle 197 then code 760: ' + money('t-save-val') + ', ' + money('t-disc-val'));
+  ok(money('t-grand') === 'BDT 3,139', 'EYES20 on four: 3,039 + 100 delivery, never stacked on SAKURA30: ' + money('t-grand'));
+
+  only({ original: 2, inside: 1, influence: 1, shadows: 1 });
+  ok(money('t-sub') === 'BDT 4,995' && money('t-save-val') === '- BDT 197' && money('t-disc-val') === '- BDT 960', 'EYES20 on five: base 4,995, bundle 197, code 960: ' + money('t-disc-val'));
+  ok(money('t-grand') === 'BDT 3,938', 'EYES20 on five: 3,838 + 100 delivery: ' + money('t-grand'));
+  ok(!/%/.test(d.getElementById('totals').textContent), 'no percentage anywhere in the totals with EYES20');
+
+  // an unknown code after a good one leaves no discount at all
+  await apply('nope');
+  ok(d.getElementById('code-msg').textContent === 'That code is not recognised', 'an unknown code is refused: ' + d.getElementById('code-msg').textContent);
+  ok(d.getElementById('t-disc').hidden === true && money('t-grand') === 'BDT 4,898', 'and no discount remains: ' + money('t-grand'));
+
+  // SAKURA30 again replaces whatever was there; codes never combine
+  await apply('sakura30');
+  ok(money('t-disc-val') === '- BDT 1,600' && money('t-grand') === 'BDT 3,298', 'SAKURA30 after EYES20 prices five at 3,298, not a combination: ' + money('t-grand'));
 
   // back to all four for the submit below
   only({ original: 1, inside: 1, influence: 1, shadows: 1 });

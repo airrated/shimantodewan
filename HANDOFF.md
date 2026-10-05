@@ -54,5 +54,5 @@ All five passes should be green before any commit.
    pages, and `ORDER_DISPATCH` in Vercel.
 2. Add the four book cover images to `images/behind-the-eyes/`.
 3. Set the environment variables listed in `README.md`, including
-   `ORDER_CODES` if you want the discount code live.
+   one `ORDER_CODE_<NAME>` variable per discount code you want live (README step 6).
 4. Deploy and confirm `/`, `/info`, `/contact` and a 404 path all work.

@@ -1743,22 +1743,25 @@ const ORDER_CONFIG = {
     }
   }
 
-  // Fixed prices in BDT, no percentages. Mirrors api/order.js, which is the copy that counts.
+  // Prices are fixed amounts in BDT; a "percent" code takes a share off the books. Mirrors api/order.js, which is the copy that counts.
   var SINGLE = 999, SINGLE_CODE = 699, SET = 3799, SET_CODE = 2499, FLOOR = 599, DELIVERY = 100;
-  var codeValue = "";            // set once the server has said the code is real
+  var codeValue = "", offer = null;   // set once the server has said the code is real
   var ALL = ["original", "inside", "influence", "shadows"];
   var money = function(n){ return "BDT " + n.toLocaleString("en-US"); };
 
-  // Each complete set of four is a set, the rest singles; a code swaps in the code prices
-  function priceOrder(items, withCode){
+  // Each complete set of four is a set, the rest singles. A code (`deal`) is one of two kinds:
+  // "fixed" swaps in the code prices, "percent" takes that much off the books after the bundle.
+  function priceOrder(items, deal){
     var qty = {};
     items.forEach(function(i){ qty[i.id] = (qty[i.id] || 0) + i.qty; });
     var complete = ALL.every(function(id){ return qty[id]; });
     var sets = complete ? Math.min.apply(null, ALL.map(function(id){ return qty[id]; })) : 0;
     var units = items.reduce(function(a, i){ return a + i.qty; }, 0);
     var singles = units - sets * 4;
-    var computed = sets * (withCode ? SET_CODE : SET) + singles * (withCode ? SINGLE_CODE : SINGLE);
-    // Hard floor, as on the server: never less than FLOOR a book
+    var fixed = !!deal && deal.kind === "fixed";
+    var computed = sets * (fixed ? SET_CODE : SET) + singles * (fixed ? SINGLE_CODE : SINGLE);
+    if (deal && deal.kind === "percent") computed -= Math.round(computed * deal.percent / 100);
+    // Hard floor, as on the server: never less than FLOOR a book, whatever the code
     var payable = Math.max(computed, FLOOR * units);
     // Savings against every book at the single price, so the lines add up
     var baseline = units * SINGLE;
@@ -1801,10 +1804,18 @@ const ORDER_CONFIG = {
   var codeBtn = document.getElementById("code-go");
   var codeMsg = document.getElementById("code-msg");
 
+  // What the server says a real code does, or null if the answer is not one we understand
+  function readOffer(d){
+    if (!d || !d.valid) return null;
+    if (d.kind === "fixed") return { kind: "fixed" };
+    if (d.kind === "percent" && d.percent >= 1 && d.percent <= 90 && d.percent % 1 === 0) return { kind: "percent", percent: d.percent };
+    return null;
+  }
+
   function applyCode(){
     var entered = codeInput.value.trim();
     if (!entered) {
-      codeValue = "";
+      codeValue = ""; offer = null;
       codeMsg.className = "code__msg"; codeMsg.textContent = "";
       recalc(); return;
     }
@@ -1819,13 +1830,15 @@ const ORDER_CONFIG = {
     .then(function(r){ return r.json(); })
     .then(function(d){
       codeBtn.disabled = false;
-      if (d && d.valid) {
-        codeValue = entered.toUpperCase();
+      var found = readOffer(d);
+      if (found) {
+        offer = found;
+        codeValue = d.code || entered.toUpperCase();
         codeMsg.className = "code__msg is-on";
         codeMsg.textContent = "Code applied";
         codeInput.readOnly = true;
       } else {
-        codeValue = "";
+        codeValue = ""; offer = null;
         codeMsg.className = "code__msg is-off";
         codeMsg.textContent = "That code is not recognised";
       }
@@ -1833,7 +1846,7 @@ const ORDER_CONFIG = {
     })
     .catch(function(){
       codeBtn.disabled = false;
-      codeValue = "";
+      codeValue = ""; offer = null;
       codeMsg.className = "code__msg is-off";
       codeMsg.textContent = "Could not check that code";
       recalc();
@@ -1846,11 +1859,11 @@ const ORDER_CONFIG = {
   });
   codeInput.addEventListener("input", function(){
     if (codeInput.readOnly) return;
-    if (codeValue) { codeValue = ""; codeMsg.textContent = ""; recalc(); }
+    if (codeValue) { codeValue = ""; offer = null; codeMsg.textContent = ""; recalc(); }
   });
 
   function recalc(){
-    var p = priceOrder(chosen(), !!codeValue);
+    var p = priceOrder(chosen(), offer);
     totals.hidden = p.units === 0;
     tCount.textContent = p.units + (p.units === 1 ? " book" : " books");
     tSub.textContent = money(p.baseline);          // every book at the single price

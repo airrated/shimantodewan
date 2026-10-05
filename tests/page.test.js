@@ -21,7 +21,7 @@ const dom = new JSDOM(html, {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
         const good = String(sent.code).trim().toUpperCase() === 'SAKURA30';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ valid:good }) });
+        return Promise.resolve({ ok:true, json: () => Promise.resolve(good ? { valid:true, code:'SAKURA30', kind:'fixed' } : { valid:false }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
