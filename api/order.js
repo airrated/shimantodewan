@@ -147,7 +147,7 @@ function buyerHtml(o) {
       </td></tr>
 
       <tr><td style="padding-top:20px;font-family:'Courier New',monospace;font-size:11px;line-height:1.9;letter-spacing:1px;color:#6E655C;">
-        ${DISPATCH ? "DISPATCH " + esc(DISPATCH.toUpperCase()) + "<br>" : ""}DELIVERY ${DELIVERY_DAYS.toUpperCase()} AFTER DISPATCH, INSIDE DHAKA, BY PATHAO<br>
+        ${DISPATCH ? "DISPATCH " + esc(DISPATCH.toUpperCase()) + "<br>" : ""}DELIVERY ${DELIVERY_DAYS.toUpperCase()}, INSIDE DHAKA, BY PATHAO<br>
         REFERENCE ${esc(o.ref)}<br>
         CANCEL ANY TIME BEFORE DISPATCH FOR A FULL REFUND<br>
         QUESTIONS, REPLY TO THIS EMAIL
@@ -182,7 +182,7 @@ function buyerText(o) {
     o.address,
     "",
     (DISPATCH ? "Dispatch " + DISPATCH + "." : "") ,
-    "Delivery " + DELIVERY_DAYS + " after dispatch, inside Dhaka, by Pathao.",
+    "Delivery " + DELIVERY_DAYS + " from confirmation, inside Dhaka, by Pathao.",
     "You can cancel any time before dispatch for a full refund.",
     "",
     "Shimanto Dewan",
