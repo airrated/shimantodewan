@@ -2,11 +2,24 @@ const fs = require('fs');
 const src = fs.readFileSync('api/order.js', 'utf8');
 
 // fail: { to, throws }  any Resend call addressed to `to` is answered with an
-// error status, or throws when `throws` is set
-function load(env, fail) {
+// error status, or throws when `throws` is set. { kv: 'status' | 'throws' }
+// makes the Redis reference check fail instead.
+// taken: reference codes already claimed in the fake Redis, e.g. ['AA2']
+function load(env, fail, taken) {
   const calls = [];
+  const store = new Set((taken || []).map((c) => 'ref:' + c));
   const fakeFetch = async (url, opts) => {
     calls.push({ url: String(url), body: opts && opts.body });
+    if (String(url).includes('kv.example.com')) {
+      if (String(url).includes('/lpush/')) return { ok: true, text: async () => 'ok', json: async () => ({ result: 1 }) };
+      // the reference claim: ["SET", "ref:CODE", "1", "NX"]
+      if (fail && fail.kv === 'throws') throw new Error('redis down');
+      if (fail && fail.kv === 'status') return { ok: false, status: 500, json: async () => ({ error: 'boom' }) };
+      const cmd = JSON.parse(opts.body);
+      if (store.has(cmd[1])) return { ok: true, json: async () => ({ result: null }) };
+      store.add(cmd[1]);
+      return { ok: true, json: async () => ({ result: 'OK' }) };
+    }
     if (String(url).includes('siteverify')) {
       const sent = JSON.parse(opts.body);
       return { ok: true, json: async () => ({ success: sent.response === 'good-token' }) };
@@ -34,7 +47,7 @@ function load(env, fail) {
     mod, mod.exports, { env }, fakeFetch,
     { error: () => {}, log: () => {} }, req
   );
-  return { handler: mod.exports, calls };
+  return { handler: mod.exports, calls, store };
 }
 
 function res() {
@@ -57,6 +70,7 @@ const OWNER = 'contact@shimantodewan.com';
 const resendMails = (calls) => calls.filter(c => c.url.includes('resend')).map(c => JSON.parse(c.body));
 const ownerOf = (calls) => resendMails(calls).find(m => m.to.includes(OWNER));
 const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
+const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
 
 (async () => {
   // --- happy path, all four -------------------------------------------
@@ -70,7 +84,7 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     }}, r);
     ok(r.code === 200, 'valid order returns 200', 'got ' + r.code);
     ok(r.body && r.body.ok === true, 'response ok');
-    ok(/^[A-HJ-NP-Z]{2}[2-9]-Rifat$/.test(r.body.ref || ''), 'reference is two letters, a digit, then the first name', r.body && r.body.ref);
+    ok(/^[A-HJ-NP-Z]{2}[2-9]$/.test(r.body.ref || ''), 'reference is two letters and a digit', r.body && r.body.ref);
     const mails = resendMails(calls);
     ok(mails.length === 2, 'two emails sent, owner and buyer', 'got ' + mails.length);
     const owner = ownerOf(calls), buyer = buyerOf(calls);
@@ -155,75 +169,94 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     ok(calls.filter(c => c.url.includes('resend')).length === 0, 'nothing is sent for an order without email');
   }
 
-  // --- order reference: two letters, a digit, then the first name ------------
+  // --- order reference: two letters and a digit, lengthened on a repeat -------
   {
-    const order = async (name, env = ENV) => {
-      const { handler, calls } = load(env);
-      const r = res();
-      await handler({ method:'POST', headers:{}, body:{ name, phone:'01712345678', email: EMAIL,
-        address:'House 4, Road 11, Banani, Dhaka 1213', items:[{id:'shadows',qty:1}] } }, r);
-      return { r, calls };
-    };
-    const CODE = '[A-HJ-NP-Z]{2}[2-9]';
-    const refFor = async (name) => (await order(name)).r.body.ref;
+    const KVENV = { ...ENV, KV_REST_API_URL:'https://kv.example.com', KV_REST_API_TOKEN:'tok' };
+    const PLAIN = /^[A-HJ-NP-Z]{2}[2-9]$/;
+    const body = { name:'Rifat Hossain', phone:'01712345678', email: EMAIL,
+      address:'House 4, Road 11, Banani, Dhaka 1213', items:[{id:'shadows',qty:1}] };
+    const place = async (h) => { const r = res(); await h.handler({ method:'POST', headers:{}, body }, r); return r; };
+    const withRandom = async (fn) => { const real = Math.random; Math.random = () => 0; try { return await fn(); } finally { Math.random = real; } };
 
-    // the name part
-    const named = [
-      ['Rifat Hossain',                       'Rifat',        'first word'],
-      ['karim ahmed',                         'Karim',        'first letter capitalised'],
-      ['   shabnam   rahman',                 'Shabnam',      'extra spaces ignored'],
-      ["O'Brien Smith",                       'OBrien',       'punctuation stripped, other capitals kept'],
-      ['Mary-Jane Smith',                     'MaryJane',     'hyphen stripped, other capitals kept'],
-      ['Md. Rahim',                           'Md',           'stops at the first space'],
-      ['R4hman Ali',                          'Rhman',        'digits stripped from the name'],
-      ['Abcdefghijklmnopqrstuvwxyz Smith',    'Abcdefghijkl', 'capped at 12 characters'],
-      ['রিফাত হোসেন',                          'রিফাত',         'Bengali name kept whole, marks and all'],
-    ];
-    for (const [name, want, why] of named) {
-      const ref = await refFor(name);
-      ok(new RegExp('^' + CODE + '-' + want + '$').test(ref), 'reference for "' + name + '" ends -' + want + ' (' + why + ')', ref);
-    }
-
-    // no usable name: just the code
-    for (const name of ['12 34', '!! ??', "'-'", '99']) {
-      const { r } = await order(name);
-      ok(r.code === 200, 'a name with no letters still places the order: "' + name + '"');
-      ok(new RegExp('^' + CODE + '$').test(r.body.ref), 'fallback is just the code for "' + name + '"', r.body.ref);
+    // no Redis: nothing to check against, so the plain code is used
+    {
+      const h = load(ENV);
+      const r = await place(h);
+      ok(r.code === 200 && PLAIN.test(r.body.ref), 'without Redis the reference is plain two letters and a digit', r.body.ref);
+      ok(!h.calls.some(c => c.url.includes('kv.example.com')), 'without Redis nothing is called to check it');
     }
 
     // the alphabet: no I or O, digits 2 to 9 only, over many draws
     {
-      const { handler } = load(ENV);
-      let bad = 0, seen = new Set();
+      const h = load(ENV);
+      let bad = 0; const seen = new Set();
       for (let i = 0; i < 400; i++) {
-        const r = res();
-        await handler({ method:'POST', headers:{}, body:{ name:'Rifat Hossain', phone:'01712345678', email: EMAIL,
-          address:'House 4, Road 11, Banani, Dhaka 1213', items:[{id:'shadows',qty:1}] } }, r);
-        if (!new RegExp('^' + CODE + '-Rifat$').test(r.body.ref)) bad++;
+        const r = await place(h);
+        if (!PLAIN.test(r.body.ref)) bad++;
         seen.add(r.body.ref);
       }
       ok(bad === 0, 'every one of 400 references uses only A-Z without I and O, and digits 2 to 9', bad + ' bad');
       ok(seen.size > 100, 'references vary between orders', seen.size + ' distinct of 400');
     }
 
-    // the same reference everywhere it is used
+    // with Redis a free code is claimed and used as it is
     {
-      const env = { ...ENV, KV_REST_API_URL:'https://kv.example.com', KV_REST_API_TOKEN:'tok' };
-      const { r, calls } = await order('Rifat Hossain', env);
-      const ref = r.body.ref;
-      const owner = ownerOf(calls), buyer = buyerOf(calls);
-      const kv = calls.find(c => c.url.includes('kv.example.com'));
+      const h = load(KVENV);
+      const r = await place(h);
+      ok(PLAIN.test(r.body.ref), 'a free code stays at two letters and a digit', r.body.ref);
+      ok(h.store.has('ref:' + r.body.ref), 'the code is claimed in Redis');
+      ok(h.calls.findIndex(c => c.url.includes('kv.example.com') && !c.url.includes('/lpush/')) < h.calls.findIndex(c => c.url.includes('resend')), 'the code is claimed before any email is sent');
+    }
+
+    // a taken code gets another digit, and again, until it is free
+    {
+      const h = load(KVENV);                       // Math.random() = 0 always draws A, A, 2
+      const refs = await withRandom(async () => [(await place(h)).body.ref, (await place(h)).body.ref, (await place(h)).body.ref, (await place(h)).body.ref]);
+      ok(refs[0] === 'AA2', 'first order gets the plain code', refs[0]);
+      ok(refs[1] === 'AA22', 'a repeat gets one more digit', refs[1]);
+      ok(refs[2] === 'AA222', 'a second repeat gets another', refs[2]);
+      ok(refs[3] === 'AA2222', 'and a third', refs[3]);
+    }
+    {
+      const h = load(KVENV, null, ['AA2']);        // a code left over from earlier orders
+      const r = await withRandom(() => place(h));
+      ok(r.body.ref === 'AA22', 'a code taken before this run is lengthened too', r.body.ref);
+    }
+
+    // however many orders arrive, no two ever share a reference
+    {
+      const h = load(KVENV);
+      const seen = new Set(); let longer = 0, bad = 0;
+      for (let i = 0; i < 500; i++) {
+        const ref = (await place(h)).body.ref;
+        seen.add(ref);
+        if (!/^[A-HJ-NP-Z]{2}[2-9]+$/.test(ref)) bad++;
+        if (ref.length > 3) longer++;
+      }
+      ok(seen.size === 500, '500 orders give 500 different references', seen.size + ' distinct');
+      ok(bad === 0, 'lengthened references keep the shape letters then digits', bad + ' bad');
+      ok(longer > 0, 'some of the 500 needed a longer code, as the maths predicts', longer + ' longer');
+    }
+
+    // the check is best effort: Redis trouble never fails or holds up an order
+    for (const [fail, how] of [[{ kv: 'status' }, 'returns an error'], [{ kv: 'throws' }, 'is unreachable']]) {
+      const h = load(KVENV, fail);
+      const r = await place(h);
+      ok(r.code === 200 && PLAIN.test(r.body.ref), 'order still goes through when Redis ' + how, r.body.ref);
+      ok(resendMails(h.calls).length === 2, 'both emails still sent when Redis ' + how);
+    }
+
+    // the same reference appears everywhere it is used
+    {
+      const h = load(KVENV);
+      const r = await place(h);
+      const ref = r.body.ref, owner = ownerOf(h.calls), buyer = buyerOf(h.calls), kv = lpushOf(h.calls);
       ok(owner.subject.startsWith('Pre-order ' + ref + ' - '), 'owner subject carries the reference', owner.subject);
       ok(buyer.subject.includes(ref), 'buyer subject carries the reference', buyer.subject);
       ok(owner.text.includes('Reference: ' + ref) && owner.html.includes(ref), 'owner email bodies carry the reference');
       ok(buyer.text.includes('Reference: ' + ref) && buyer.html.includes(ref), 'buyer email bodies carry the reference');
       ok(!!kv && JSON.parse(kv.body).ref === ref, 'order log record carries the same reference');
-    }
-
-    // the fallback code is used in the same places
-    {
-      const { r, calls } = await order('12 34');
-      ok(ownerOf(calls).subject.startsWith('Pre-order ' + r.body.ref + ' - ') && buyerOf(calls).subject.includes(r.body.ref), 'subjects work with a code-only reference', r.body.ref);
+      ok(!/BTE/.test(owner.text + owner.html + buyer.text + buyer.html + owner.subject + buyer.subject), 'no trace of the old BTE format');
     }
   }
 
@@ -297,7 +330,7 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     const r = res();
     await handler({ method:'POST', headers:{}, body: karim }, r);
     ok(r.code === 502 && r.body.error === 'send_failed', 'owner send that ' + how + ' reports send_failed', 'code ' + r.code);
-    const kv = calls.find(c => c.url.includes('kv.example.com'));
+    const kv = lpushOf(calls);
     const saved = kv && JSON.parse(kv.body);
     ok(!!saved && saved.email === EMAIL && saved.ownerEmail === 'failed', 'order is written to the log when the owner send ' + how);
   }
@@ -395,7 +428,7 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     const { handler, calls } = load(env);
     const r = res();
     await handler({ method:'POST', headers:{}, body: base }, r);
-    const kv = calls.find(c => c.url.includes('kv.example.com'));
+    const kv = lpushOf(calls);
     ok(!!kv && kv.url.includes('/lpush/orders'), 'order appended to the log');
     ok(kv && JSON.parse(kv.body).ref, 'logged record carries the reference');
     ok(kv && JSON.parse(kv.body).email === EMAIL, 'logged record carries the buyer email');

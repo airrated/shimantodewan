@@ -22,7 +22,7 @@ const dom = new JSDOM(fs.readFileSync(file, 'utf8'), {
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ ok:true, ref:'JZ5-Rifat' }) });
+        return Promise.resolve({ ok:true, json: () => Promise.resolve({ ok:true, ref:'JZ5' }) });
       }
       return Promise.reject(new Error('blocked ' + url));
     };

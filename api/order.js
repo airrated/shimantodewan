@@ -55,21 +55,42 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
 ));
 
-// Two letters and a digit, then the buyer's first name: JZ5-Rifat.
-// Short, readable, hard to mistype on the phone. Without a usable first
-// name it is just the code, e.g. JZ5.
-function reference(name) {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // no I, O, 0, 1
-  const letters = alphabet.replace(/[0-9]/g, "");
-  const digits = alphabet.replace(/[^0-9]/g, "");
-  const pick = (s) => s[Math.floor(Math.random() * s.length)];
-  const code = pick(letters) + pick(letters) + pick(digits);
+// Two letters and a digit, e.g. JZ5. Short, readable, hard to mistype on the
+// phone, and no I, O, 0 or 1 to mix up.
+const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+const LETTERS = ALPHABET.replace(/[0-9]/g, "");
+const DIGITS = ALPHABET.replace(/[^0-9]/g, "");
+const pick = (s) => s[Math.floor(Math.random() * s.length)];
+const reference = () => pick(LETTERS) + pick(LETTERS) + pick(DIGITS);
 
-  // First word, letters only (marks kept so Bengali and accented names stay
-  // whole), at most 12 characters, first letter capitalised
-  const first = Array.from(String(name || "").trim().split(/\s+/)[0].replace(/[^\p{L}\p{M}]/gu, "")).slice(0, 12);
-  if (!first.length) return code;
-  return code + "-" + first[0].toUpperCase() + first.slice(1).join("");
+// There are only 4,608 codes of that shape, so repeats are likely after a few
+// dozen orders. When a code is already taken another digit is added, and again
+// if that is taken too, so no two orders ever share one. Taken codes are kept
+// in Redis, the same database as the order log, and claimed with SET NX so two
+// orders arriving together cannot both get it. With no database there is
+// nothing to check against and the plain code is used as it is. The check is
+// best effort: it must never hold up or fail an order.
+async function claimReference() {
+  let ref = reference();
+  const url = process.env.KV_REST_API_URL, token = process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return ref;
+  for (let tries = 0; tries < 12; tries++) {
+    try {
+      const r = await fetch(url.replace(/\/$/, ""), {
+        method: "POST",
+        headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+        body: JSON.stringify(["SET", "ref:" + ref, "1", "NX"]),
+      });
+      const d = await r.json();
+      if (!r.ok || d.error) return ref;      // cannot tell, so carry on with it
+      if (d.result === "OK") return ref;     // ours
+    } catch (err) {
+      console.error("Could not check the reference for repeats:", err);
+      return ref;
+    }
+    ref += pick(DIGITS);                     // taken: lengthen and try again
+  }
+  return ref;
 }
 
 function shell(inner) {
@@ -383,7 +404,7 @@ module.exports = async (req, res) => {
     subtotal: p.subtotal, sets: p.sets, saving: p.saving, units: p.units,
     discount: p.discount, payable: p.payable,
     code: codeOk ? codes.normalise(b.code) : "", codePercent,
-    ref: reference(name),
+    ref: await claimReference(),
     at: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) + " (Dhaka)",
   };
 

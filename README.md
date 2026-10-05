@@ -62,6 +62,12 @@ project. That sets `KV_REST_API_URL` and `KV_REST_API_TOKEN` for you.
 Every order is then appended to a list called `orders`, as well as emailed.
 Without it, email is your only record.
 
+The same database keeps order references unique. A reference is two letters
+and a digit, like `JZ5`. There are only 4,608 of those, so when a code has
+already been used another digit is added (`JZ57`), and again if needed.
+Without the database nothing remembers earlier codes, so repeats become
+likely after a few dozen orders.
+
 ### 5. Bot protection (optional)
 
 Cloudflare, Turnstile, add a widget for shimantodewan.com. Then:
