@@ -25,7 +25,7 @@ const dom = new JSDOM(html, {
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
-        return Promise.resolve({ ok:true, json: () => Promise.resolve({ ok:true, ref:'BTE-TEST1' }) });
+        return Promise.resolve({ ok:true, json: () => Promise.resolve({ ok:true, ref:'JZ5-Rifat' }) });
       }
       return Promise.reject(new Error('blocked: ' + url));
     };
@@ -138,7 +138,7 @@ function run() {
     const done = d.getElementById('order-done');
     ok(done && done.hidden === false, 'success panel shown');
     ok(d.getElementById('order-form').hidden === true, 'form hidden after success');
-    ok(d.getElementById('order-ref').textContent === 'BTE-TEST1', 'reference displayed: ' + d.getElementById('order-ref').textContent);
+    ok(d.getElementById('order-ref').textContent === 'JZ5-Rifat', 'reference displayed: ' + d.getElementById('order-ref').textContent);
     ok(d.getElementById('order-sent').hidden === false, 'buyer-copy note shown when email given');
     resolve(fail);
   }, 60));

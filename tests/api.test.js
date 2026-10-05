@@ -70,7 +70,7 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     }}, r);
     ok(r.code === 200, 'valid order returns 200', 'got ' + r.code);
     ok(r.body && r.body.ok === true, 'response ok');
-    ok(/^BTE-[A-Z2-9]{5}$/.test(r.body.ref || ''), 'reference generated', r.body && r.body.ref);
+    ok(/^[A-HJ-NP-Z]{2}[2-9]-Rifat$/.test(r.body.ref || ''), 'reference is two letters, a digit, then the first name', r.body && r.body.ref);
     const mails = resendMails(calls);
     ok(mails.length === 2, 'two emails sent, owner and buyer', 'got ' + mails.length);
     const owner = ownerOf(calls), buyer = buyerOf(calls);
@@ -153,6 +153,78 @@ const buyerOf = (calls) => resendMails(calls).find(m => !m.to.includes(OWNER));
     ok(r.code === 400, 'order without email rejected', 'got ' + r.code);
     ok(r.body && Array.isArray(r.body.errors) && r.body.errors.includes('email'), 'missing email reported as an email error');
     ok(calls.filter(c => c.url.includes('resend')).length === 0, 'nothing is sent for an order without email');
+  }
+
+  // --- order reference: two letters, a digit, then the first name ------------
+  {
+    const order = async (name, env = ENV) => {
+      const { handler, calls } = load(env);
+      const r = res();
+      await handler({ method:'POST', headers:{}, body:{ name, phone:'01712345678', email: EMAIL,
+        address:'House 4, Road 11, Banani, Dhaka 1213', items:[{id:'shadows',qty:1}] } }, r);
+      return { r, calls };
+    };
+    const CODE = '[A-HJ-NP-Z]{2}[2-9]';
+    const refFor = async (name) => (await order(name)).r.body.ref;
+
+    // the name part
+    const named = [
+      ['Rifat Hossain',                       'Rifat',        'first word'],
+      ['karim ahmed',                         'Karim',        'first letter capitalised'],
+      ['   shabnam   rahman',                 'Shabnam',      'extra spaces ignored'],
+      ["O'Brien Smith",                       'OBrien',       'punctuation stripped, other capitals kept'],
+      ['Mary-Jane Smith',                     'MaryJane',     'hyphen stripped, other capitals kept'],
+      ['Md. Rahim',                           'Md',           'stops at the first space'],
+      ['R4hman Ali',                          'Rhman',        'digits stripped from the name'],
+      ['Abcdefghijklmnopqrstuvwxyz Smith',    'Abcdefghijkl', 'capped at 12 characters'],
+      ['রিফাত হোসেন',                          'রিফাত',         'Bengali name kept whole, marks and all'],
+    ];
+    for (const [name, want, why] of named) {
+      const ref = await refFor(name);
+      ok(new RegExp('^' + CODE + '-' + want + '$').test(ref), 'reference for "' + name + '" ends -' + want + ' (' + why + ')', ref);
+    }
+
+    // no usable name: just the code
+    for (const name of ['12 34', '!! ??', "'-'", '99']) {
+      const { r } = await order(name);
+      ok(r.code === 200, 'a name with no letters still places the order: "' + name + '"');
+      ok(new RegExp('^' + CODE + '$').test(r.body.ref), 'fallback is just the code for "' + name + '"', r.body.ref);
+    }
+
+    // the alphabet: no I or O, digits 2 to 9 only, over many draws
+    {
+      const { handler } = load(ENV);
+      let bad = 0, seen = new Set();
+      for (let i = 0; i < 400; i++) {
+        const r = res();
+        await handler({ method:'POST', headers:{}, body:{ name:'Rifat Hossain', phone:'01712345678', email: EMAIL,
+          address:'House 4, Road 11, Banani, Dhaka 1213', items:[{id:'shadows',qty:1}] } }, r);
+        if (!new RegExp('^' + CODE + '-Rifat$').test(r.body.ref)) bad++;
+        seen.add(r.body.ref);
+      }
+      ok(bad === 0, 'every one of 400 references uses only A-Z without I and O, and digits 2 to 9', bad + ' bad');
+      ok(seen.size > 100, 'references vary between orders', seen.size + ' distinct of 400');
+    }
+
+    // the same reference everywhere it is used
+    {
+      const env = { ...ENV, KV_REST_API_URL:'https://kv.example.com', KV_REST_API_TOKEN:'tok' };
+      const { r, calls } = await order('Rifat Hossain', env);
+      const ref = r.body.ref;
+      const owner = ownerOf(calls), buyer = buyerOf(calls);
+      const kv = calls.find(c => c.url.includes('kv.example.com'));
+      ok(owner.subject.startsWith('Pre-order ' + ref + ' - '), 'owner subject carries the reference', owner.subject);
+      ok(buyer.subject.includes(ref), 'buyer subject carries the reference', buyer.subject);
+      ok(owner.text.includes('Reference: ' + ref) && owner.html.includes(ref), 'owner email bodies carry the reference');
+      ok(buyer.text.includes('Reference: ' + ref) && buyer.html.includes(ref), 'buyer email bodies carry the reference');
+      ok(!!kv && JSON.parse(kv.body).ref === ref, 'order log record carries the same reference');
+    }
+
+    // the fallback code is used in the same places
+    {
+      const { r, calls } = await order('12 34');
+      ok(ownerOf(calls).subject.startsWith('Pre-order ' + r.body.ref + ' - ') && buyerOf(calls).subject.includes(r.body.ref), 'subjects work with a code-only reference', r.body.ref);
+    }
   }
 
   // --- owner and buyer emails show the same numbers --------------------------

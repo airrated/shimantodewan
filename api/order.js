@@ -55,12 +55,21 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
 ));
 
-// Short, readable, hard to mistype on the phone
-function reference() {
+// Two letters and a digit, then the buyer's first name: JZ5-Rifat.
+// Short, readable, hard to mistype on the phone. Without a usable first
+// name it is just the code, e.g. JZ5.
+function reference(name) {
   const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";   // no I, O, 0, 1
-  let out = "";
-  for (let i = 0; i < 5; i++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
-  return "BTE-" + out;
+  const letters = alphabet.replace(/[0-9]/g, "");
+  const digits = alphabet.replace(/[^0-9]/g, "");
+  const pick = (s) => s[Math.floor(Math.random() * s.length)];
+  const code = pick(letters) + pick(letters) + pick(digits);
+
+  // First word, letters only (marks kept so Bengali and accented names stay
+  // whole), at most 12 characters, first letter capitalised
+  const first = Array.from(String(name || "").trim().split(/\s+/)[0].replace(/[^\p{L}\p{M}]/gu, "")).slice(0, 12);
+  if (!first.length) return code;
+  return code + "-" + first[0].toUpperCase() + first.slice(1).join("");
 }
 
 function shell(inner) {
@@ -374,7 +383,7 @@ module.exports = async (req, res) => {
     subtotal: p.subtotal, sets: p.sets, saving: p.saving, units: p.units,
     discount: p.discount, payable: p.payable,
     code: codeOk ? codes.normalise(b.code) : "", codePercent,
-    ref: reference(),
+    ref: reference(name),
     at: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) + " (Dhaka)",
   };
 
