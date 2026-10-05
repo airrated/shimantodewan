@@ -3,18 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Shimanto Dewan</title>
-<meta name="description" content="Shimanto Dewan.">
-<link rel="canonical" href="https://shimantodewan.com/">
+<title>Page not found - Shimanto Dewan</title>
+<meta name="description" content="Page not found.">
+<link rel="canonical" href="https://shimantodewan.com/404">
+<meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#141110">
 
 <meta property="og:type" content="website">
-<meta property="og:title" content="Shimanto Dewan">
-<meta property="og:url" content="https://shimantodewan.com/">
-<meta property="og:image" content="https://shimantodewan.com/images/og.jpg">
-<meta property="og:image:width" content="1200">
-<meta property="og:image:height" content="630">
-<meta name="twitter:card" content="summary_large_image">
+<meta property="og:title" content="Page not found">
+<meta property="og:url" content="https://shimantodewan.com/404">
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect width='1024' height='1024' fill='%23141110'/%3E%3Cg transform='translate(112,234) scale(0.39754)'%3E%3Cpath fill='%23F3ECE4' d='m544.68,608.32c-80.28-139.05-32.64-316.86,106.41-397.14h0c45.23-26.11,94.53-38.8,143.29-39.3L695.16,0H3.27l607.39,1052.04c31.28,54.17,12.72,123.44-41.46,154.71l-2.23,1.29c-54.17,31.28-123.44,12.72-154.71-41.46L0,452.51v946.25h1001.04l-456.36-790.44Z'/%3E%3Cpath fill='%23D4634F' d='m1321.15.43h-506.85v7.56l437.64,758.01c84.92,147.08,34.53,335.15-112.55,420.07h0c-41.58,24-86.43,37.19-131.31,40.44l99.21,171.83h213.86c381.76,0,691.23-309.48,691.23-691.23v-15.44C2012.38,309.91,1702.9.43,1321.15.43Z'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="alternate icon" type="image/svg+xml" href="/images/favicon.svg">
@@ -48,7 +45,7 @@
 }
 *,*::before,*::after{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-html,body{margin:0;padding:0;min-height:100%;overflow-x:hidden;background:var(--black)}
+html,body{margin:0;padding:0;height:100%;overflow:hidden;background:var(--black)}
 body{color:var(--ivory);-webkit-font-smoothing:antialiased}
 
 /* --- The field ---------------------------------------------------------
@@ -100,27 +97,30 @@ h1{
   line-height:1;letter-spacing:-.015em;text-align:center;
 }
 .rule{width:clamp(2.2rem,7vw,4.5rem);height:1px;background:var(--ivory);opacity:.24;border:0;margin:0}
-a.link{
-  font-family:"IBM Plex Mono",ui-monospace,monospace;
-  font-size:.62rem;letter-spacing:.16em;text-transform:uppercase;
-  color:var(--ivory);text-decoration:none;opacity:.72;
-  border-bottom:1px solid rgba(243,236,228,.3);padding-bottom:.25em;
-  transition:color .35s cubic-bezier(.22,.61,.36,1),
-             border-color .35s cubic-bezier(.22,.61,.36,1),
-             opacity .35s cubic-bezier(.22,.61,.36,1);
-}
-a.link:hover,a.link:focus-visible{color:#D4634F;border-color:#D4634F;opacity:1}
 
-.mark,.rule,h1,a.link{animation:rise 1.15s cubic-bezier(.16,1,.3,1) both}
+.mark,.rule,h1{animation:rise 1.15s cubic-bezier(.16,1,.3,1) both}
 .rule{animation-delay:.14s}
 h1{animation-delay:.22s}
-a.link{animation-delay:.32s}
 @keyframes rise{from{opacity:0;transform:translate3d(0,14px,0)}to{opacity:1;transform:none}}
 
 @media (prefers-reduced-motion:reduce){
-  .mark,.rule,h1,a.link{animation:none}
+  .mark,.rule,h1{animation:none}
   .field i{animation:none;will-change:auto}
 }
+
+p.note{
+  margin:0;font-family:"Inter",sans-serif;font-weight:300;
+  font-size:clamp(.85rem,2vw,.95rem);color:#8C8177;text-align:center;
+  max-width:30ch;line-height:1.6;
+}
+a.home{
+  font-family:"IBM Plex Mono",monospace;font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;
+  color:#F3ECE4;border-bottom:1px solid rgba(243,236,228,.35);padding-bottom:.2em;
+  transition:border-color .35s cubic-bezier(.22,.61,.36,1),color .35s cubic-bezier(.22,.61,.36,1);
+}
+a.home:hover,a.home:focus-visible{color:#D4634F;border-color:#D4634F}
+p.note,a.home{animation:rise 1.15s cubic-bezier(.16,1,.3,1) both;animation-delay:.3s}
+@media (prefers-reduced-motion:reduce){p.note,a.home{animation:none}}
 </style>
 </head>
 <body>
@@ -128,17 +128,10 @@ a.link{animation-delay:.32s}
   <main>
     <div class="mark"><svg viewBox="0 0 2012.38 1398.76" role="img" aria-label="Shimanto Dewan monogram"><path fill="#F3ECE4" d="m544.68,608.32c-80.28-139.05-32.64-316.86,106.41-397.14h0c45.23-26.11,94.53-38.8,143.29-39.3L695.16,0H3.27l607.39,1052.04c31.28,54.17,12.72,123.44-41.46,154.71l-2.23,1.29c-54.17,31.28-123.44,12.72-154.71-41.46L0,452.51v946.25h1001.04l-456.36-790.44Z"/><path fill="#D4634F" d="m1321.15.43h-506.85v7.56l437.64,758.01c84.92,147.08,34.53,335.15-112.55,420.07h0c-41.58,24-86.43,37.19-131.31,40.44l99.21,171.83h213.86c381.76,0,691.23-309.48,691.23-691.23v-15.44C2012.38,309.91,1702.9.43,1321.15.43Z"/></svg></div>
     <hr class="rule">
-    <h1>Shimanto Dewan</h1>
-    <a class="link" href="https://www.linkedin.com/in/shimantodewan/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+    <h1>Page not found.</h1>
+    <p class="note">This address does not lead anywhere on this site.</p>
+    <a class="home" href="/">Back to the front page</a>
   </main>
-<script>
-(function(){
-  var css1 = "font-family:Georgia,serif;font-size:15px;letter-spacing:.02em;color:#141110;";
-  var css2 = "font-family:monospace;font-size:11px;letter-spacing:.12em;color:#6E655C;";
-  console.log("%cShimanto Dewan", css1);
-  console.log("%cLAW STUDENT \u00b7 UNIVERSITY OF LONDON \u00b7 SHIMANTODEWAN.COM", css2);
-})();
-</script>
 <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

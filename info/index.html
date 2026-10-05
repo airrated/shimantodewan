@@ -201,6 +201,7 @@ a{color:inherit;text-decoration:none}
   background:var(--ox);color:#141110;
   font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;text-transform:uppercase;
   line-height:1;white-space:nowrap;
+  border:0;cursor:pointer;-webkit-appearance:none;appearance:none;
   transition:background .35s var(--ease),color .35s var(--ease);
 }
 .cta .arw{display:inline-block;transition:transform .4s var(--ease)}
@@ -243,9 +244,50 @@ a{color:inherit;text-decoration:none}
   min-height:52px;
   font-size:clamp(.7rem,.95vw,.82rem);letter-spacing:.2em;
   gap:.55em;
-  margin-bottom:clamp(.5rem,1.6vw,1.8rem);
 }
 .cta--cover .arw{font-size:1.1em}
+.cover__actions{
+  display:flex;flex-wrap:wrap;gap:clamp(.5rem,1.2vw,.85rem);
+  margin-bottom:clamp(.5rem,1.6vw,1.8rem);
+}
+/* The second action is the same capsule a shade deeper, so it reads as a
+   sibling rather than a competing system */
+.cta--alt{background:var(--ox-sm);color:var(--ivory)}
+.cta--alt:hover,.cta--alt:focus-visible{background:var(--ink);color:var(--ivory)}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none}
+.ts-slot:not(:empty){margin:0 0 1.2rem}
+.code__row{display:flex;align-items:flex-end;gap:.8rem}
+.code__row input{flex:1;text-transform:uppercase;letter-spacing:.08em}
+.code__row button{
+  flex:none;background:none;border:1px solid var(--rule);color:inherit;cursor:pointer;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
+  padding:.65rem 1rem;transition:border-color .3s var(--ease),color .3s var(--ease);
+}
+.code__row button:hover,.code__row button:focus-visible{border-color:var(--ox);color:var(--ox)}
+.code__row button:disabled{opacity:.4;cursor:default}
+.code__msg{
+  display:block;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;
+  margin-top:.5rem;color:var(--muted);min-height:1em;
+}
+.code__msg.is-on{color:var(--ox-sm)}
+.code__msg.is-off{color:var(--muted)}
+#t-disc span:first-child,#t-save span:first-child{color:var(--ox-sm)}
+.order__done{border-top:1px solid var(--rule);padding-top:1.4rem;outline:none}
+.order__done-h{
+  font-family:var(--serif);font-size:clamp(1.5rem,3vw,2.2rem);line-height:1.1;
+  color:var(--ox-sm);margin:0 0 .7rem;
+}
+.order__done p{font-family:var(--serif);font-size:clamp(.95rem,1.2vw,1.08rem);line-height:1.6;margin:0;max-width:44ch}
+.order__done b{font-weight:500}
+.order__ref{
+  font-family:var(--mono)!important;font-size:.62rem!important;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted);margin-bottom:.8rem!important;
+}
+.order__ref b{color:var(--ox-sm);font-weight:400}
+.order__sent{
+  font-family:var(--mono)!important;font-size:.58rem!important;letter-spacing:.12em;
+  color:var(--muted);margin-top:.9rem!important;
+}
 .cover__name .ln{display:block;overflow:hidden}
 .cover__name .w{
   display:block;
@@ -658,6 +700,145 @@ a{color:inherit;text-decoration:none}
 }
 
 
+
+/* ==========================================================================
+   BEHIND THE EYES - written work and pre-orders
+   ========================================================================== */
+.books{padding-bottom:clamp(4rem,12vh,8rem)}
+.books__h{font-size:clamp(2.6rem,10vw,7rem);margin:clamp(1rem,3vh,2rem) 0 clamp(1.2rem,3vh,2rem)}
+.books__h span{display:block}
+.books__h span:last-child{padding-left:.08em}
+.books__grid{
+  display:grid;gap:clamp(2.2rem,5vw,3.6rem);
+  margin-top:clamp(2.4rem,6vh,4rem);
+}
+@media (min-width:640px){.books__grid{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1100px){.books__grid{grid-template-columns:repeat(4,1fr);gap:clamp(1.6rem,2.4vw,2.6rem)}}
+
+.book{display:flex;flex-direction:column}
+.book__frame{
+  position:relative;overflow:hidden;
+  aspect-ratio:3/4;background:var(--ivory-deep);
+  display:flex;align-items:center;justify-content:center;
+  margin-bottom:1rem;
+}
+.book__frame img{
+  width:100%;height:100%;object-fit:contain;
+  transition:transform .75s var(--ease-out);
+  will-change:transform;
+}
+.book:hover .book__frame img,.book:focus-within .book__frame img{transform:scale(1.045)}
+/* Shown until the cover images are added, so the grid never breaks */
+.book__ghost{
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:1.5rem;font-family:var(--serif);font-style:italic;
+  font-size:clamp(1rem,1.6vw,1.25rem);line-height:1.3;color:rgba(20,17,16,.35);
+}
+.book__n{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ox-sm);margin:0 0 .5rem;
+}
+.book__t{
+  font-family:var(--serif);font-weight:500;line-height:1.05;letter-spacing:-.02em;
+  font-size:clamp(1.3rem,2.2vw,1.65rem);margin:0 0 .35rem;
+}
+.book__t em{font-style:italic;font-weight:400}
+.book__sub{
+  font-family:var(--serif);font-style:italic;font-size:clamp(.9rem,1.1vw,1rem);
+  color:var(--muted);margin:0 0 .8rem;line-height:1.35;
+}
+.book__price{
+  display:flex;align-items:baseline;gap:.6rem;margin:0 0 .9rem;
+  font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;
+}
+.book__price s{color:var(--muted);text-decoration-thickness:1px}
+.book__price b{font-weight:400;color:var(--ox-sm)}
+.book__hook{
+  font-family:var(--serif);font-size:clamp(.92rem,1.1vw,1rem);line-height:1.6;
+  margin:0;border-top:1px solid var(--rule);padding-top:.8rem;
+}
+.book__more{margin-top:.7rem}
+.book__more summary{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;list-style:none;padding:.3rem 0;
+}
+.book__more summary::-webkit-details-marker{display:none}
+.book__more summary::after{content:" +";color:var(--ox-sm)}
+.book__more[open] summary::after{content:" -"}
+.book__more summary:hover{color:var(--fg)}
+.book__more p{
+  font-family:var(--serif);font-size:clamp(.88rem,1vw,.96rem);line-height:1.6;
+  margin:.6rem 0 0;color:var(--muted);
+}
+
+/* ---- Pre-order ---------------------------------------------------------- */
+.order{
+  margin-top:clamp(3rem,8vh,5rem);
+  border-top:1px solid var(--rule);padding-top:clamp(1.6rem,4vh,2.6rem);
+  display:grid;gap:clamp(2rem,5vw,4rem);
+}
+@media (min-width:900px){.order{grid-template-columns:1.25fr .75fr;align-items:start}}
+.order__h{
+  font-family:var(--serif);font-weight:500;letter-spacing:-.02em;line-height:1;
+  font-size:clamp(1.8rem,4vw,2.8rem);margin:0 0 .6rem;
+}
+.order__lead{font-family:var(--serif);font-size:clamp(.95rem,1.2vw,1.08rem);line-height:1.6;max-width:46ch;margin:0 0 clamp(1.4rem,3.5vh,2.2rem)}
+.order fieldset{border:0;margin:0 0 clamp(1.4rem,3.5vh,2rem);padding:0}
+.order legend,.order__label{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);padding:0;margin-bottom:.8rem;display:block;
+}
+.pick{display:flex;align-items:center;gap:.9rem;border-bottom:1px solid var(--rule);padding:.7rem 0}
+.pick label{display:flex;align-items:center;gap:.7rem;flex:1;cursor:pointer;font-family:var(--serif);font-size:clamp(.95rem,1.2vw,1.08rem)}
+.pick input[type=checkbox]{
+  appearance:none;width:16px;height:16px;flex:none;
+  border:1px solid var(--muted);background:none;cursor:pointer;
+  transition:background .25s var(--ease),border-color .25s var(--ease);
+}
+.pick input[type=checkbox]:checked{background:var(--ox);border-color:var(--ox)}
+.pick select{
+  appearance:none;background:none;border:1px solid var(--rule);color:inherit;
+  font-family:var(--mono);font-size:.62rem;padding:.4rem .7rem;cursor:pointer;
+}
+.pick select:disabled{opacity:.35;cursor:default}
+.field{margin-bottom:1.3rem}
+.field input,.field textarea{
+  width:100%;background:none;border:0;border-bottom:1px solid var(--rule);
+  color:inherit;font-family:var(--serif);font-size:clamp(1rem,1.3vw,1.15rem);
+  padding:.55rem 0;border-radius:0;
+}
+.field textarea{resize:vertical;min-height:4.5rem;line-height:1.5}
+.field input:focus,.field textarea:focus{outline:none;border-bottom-color:var(--ox)}
+.field .err{
+  display:none;font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;
+  color:var(--ox);margin-top:.4rem;
+}
+.field.is-bad input,.field.is-bad textarea{border-bottom-color:var(--ox)}
+.field.is-bad .err{display:block}
+.totals{
+  border-top:1px solid var(--rule);padding-top:1rem;margin-bottom:1.4rem;
+  font-family:var(--mono);font-size:.66rem;letter-spacing:.06em;
+}
+.totals div{display:flex;justify-content:space-between;padding:.3rem 0}
+.totals .grand{color:var(--fg);border-top:1px solid var(--rule);margin-top:.5rem;padding-top:.7rem}
+.order__note{
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;line-height:1.7;
+  color:var(--muted);margin:.9rem 0 0;max-width:42ch;
+}
+.order__terms{display:flex;flex-direction:column;gap:1.3rem}
+.order__terms section{border-top:1px solid var(--rule);padding-top:.8rem}
+.order__terms h4{
+  font-family:var(--mono);font-weight:400;font-size:.58rem;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 .5rem;
+}
+.order__terms p{font-family:var(--serif);font-size:clamp(.9rem,1.1vw,1rem);line-height:1.55;margin:0}
+.order__terms b{font-weight:500;font-variant-numeric:tabular-nums}
+
+@media (prefers-reduced-motion:reduce){
+  .book__frame img{transition:none}
+  .book:hover .book__frame img{transform:none}
+}
+
 /* ==========================================================================
    Reduced motion
    ========================================================================== */
@@ -680,7 +861,7 @@ a{color:inherit;text-decoration:none}
       <span class="nm">Shimanto Dewan</span>
     </a>
   </div>
-  <p class="masthead__folio"><span id="folio">01</span> / 10 &nbsp;·&nbsp; Vol. 01</p>
+  <p class="masthead__folio"><span id="folio">01</span> / 11 &nbsp;·&nbsp; Vol. 01</p>
   <nav class="quick" aria-label="Quick contact">
     <a id="q-mail" class="is-accent" href="#contact">Email</a>
   </nav>
@@ -702,7 +883,10 @@ a{color:inherit;text-decoration:none}
           <span class="ln"><span class="w w--1" data-p="given">Shimanto</span></span>
           <span class="ln"><span class="w w--2" data-p="family">Dewan</span></span>
         </h1>
-        <a class="cta cta--cover" href="#contact">Contact <span class="arw" aria-hidden="true">&#8595;</span></a>
+        <div class="cover__actions">
+          <a class="cta cta--cover" href="#contact">Contact <span class="arw" aria-hidden="true">&#8595;</span></a>
+          <a class="cta cta--cover cta--alt" href="#books">Pre Order <span class="arw" aria-hidden="true">&#8595;</span></a>
+        </div>
       </div>
 
       <div class="cover__mid">
@@ -853,10 +1037,10 @@ a{color:inherit;text-decoration:none}
           <p class="hpanel__note">How responsibility is attributed, and what follows from it.</p>
         </article>
         <article class="hpanel">
-          <p class="hpanel__n">v - Advocacy</p>
-          <h3 class="hpanel__w">Advocacy</h3>
+          <p class="hpanel__n">v - Writing</p>
+          <h3 class="hpanel__w">Writing</h3>
           <hr class="rule hpanel__rule">
-          <p class="hpanel__note">Putting all of it in front of a court. The part I am studying towards.</p>
+          <p class="hpanel__note">Setting an argument down in words that hold up when read closely. The part of all this I am strongest at.</p>
         </article>
       </div>
     </div>
@@ -894,12 +1078,12 @@ a{color:inherit;text-decoration:none}
       </div>
       <div class="stage is-now">
         <p class="stage__t">Now - First Year</p>
-        <h3 class="stage__n"><em>Barrett Law</em></h3>
+        <h3 class="stage__n"><em>Law</em></h3>
         <p class="stage__i" data-p="university">University of London</p>
       </div>
     </div>
 
-    <p class="journey__pivot">I learned to audit before I learned to argue.</p>
+    <p class="journey__pivot">The subject changed. The method did not.</p>
   </section>
 
   <!-- ===================== 06 - AMBITION ===================== -->
@@ -950,9 +1134,188 @@ a{color:inherit;text-decoration:none}
 
   </section>
 
+
+  <!-- ===================== 08 - BEHIND THE EYES ===================== -->
+  <section class="scene books" id="books" aria-labelledby="books-h" data-scene="08">
+    <p class="scene__index"><span class="n">08</span> <span class="t">Written work</span></p>
+
+    <h2 class="display books__h" id="books-h"><span>Behind</span><span>the <em>Eyes.</em></span></h2>
+    <p class="prose prose--wide">
+      Four books on how people argue, read each other, persuade and manipulate.
+      <em>Each one stands on its own.</em>
+    </p>
+
+    <div class="books__grid">
+      <article class="book">
+        <div class="book__frame">
+          <img src="/images/behind-the-eyes/original.jpg" alt="Cover of Behind the Eyes: Original"
+               loading="lazy" decoding="async" data-title="Behind the Eyes: Original">
+        </div>
+        <p class="book__n">Book 01</p>
+        <h3 class="book__t">Behind the Eyes: <em>Original</em></h3>
+        <p class="book__sub">Mastering Yourself Before You Master the Conversation</p>
+        <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
+        <p class="book__hook">You had the better point. You'd even rehearsed it. So why did the conversation fall apart three minutes in?</p>
+        <details class="book__more"><summary>More</summary><p>Most arguments aren't lost on the facts. They're lost the moment emotion takes the wheel. Your voice speeds up, your points come out in the wrong order, and suddenly you're saying "you always" about something that happened once.</p><p><em>Original</em> explains what actually happens in your body and brain when that happens, and what the research says brings you back. It covers why venting makes anger worse, why bottling it up backfires, how to put your thoughts into words someone can actually follow, and how to handle the conversations you've been putting off for months.</p><p>There are no mind tricks and no motivational fluff, just tested ideas and real-life scenarios to practise on.</p></details>
+      </article>
+      <article class="book">
+        <div class="book__frame">
+          <img src="/images/behind-the-eyes/inside.jpg" alt="Cover of Behind the Eyes: Inside"
+               loading="lazy" decoding="async" data-title="Behind the Eyes: Inside">
+        </div>
+        <p class="book__n">Book 02</p>
+        <h3 class="book__t">Behind the Eyes: <em>Inside</em></h3>
+        <p class="book__sub">What's Really Going On Inside Their Head</p>
+        <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
+        <p class="book__hook">Even close friends correctly guess what the other is thinking only around a third of the time. Most people spot a lie barely better than a coin toss.</p>
+        <details class="book__more"><summary>More</summary><p>And that famous rule about liars avoiding eye contact? It isn't true.</p><p><em>Inside</em> is about how people really work, and how badly we usually read them. It covers why being close to someone can make you worse at understanding them, the mental shortcuts that bend how you see the people you love, how early attachment shapes the way adults behave in relationships, and what someone usually wants underneath what they actually say.</p><p>Along the way it takes apart the popular body language myths and replaces them with what the evidence supports. You'll come away seeing people more accurately, starting with the ones closest to you.</p></details>
+      </article>
+      <article class="book">
+        <div class="book__frame">
+          <img src="/images/behind-the-eyes/influence.jpg" alt="Cover of Behind the Eyes: Influence"
+               loading="lazy" decoding="async" data-title="Behind the Eyes: Influence">
+        </div>
+        <p class="book__n">Book 03</p>
+        <h3 class="book__t">Behind the Eyes: <em>Influence</em></h3>
+        <p class="book__sub">Using Their Own Mind to Win, Without Losing Them</p>
+        <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
+        <p class="book__hook">You can win the argument and lose the person. Most of us do it all the time.</p>
+        <details class="book__more"><summary>More</summary><p><em>Influence</em> is about a better kind of winning. It explains the four habits that wreck disagreements before they begin, why pushing harder makes people dig in, and the one question that gets people to rethink their own position. It also shows how negotiators find outcomes where nobody has to lose.</p><p>It draws on research into persuasion, negotiation and close relationships, and it's honest about which famous techniques hold up and which quietly fell apart when scientists tested them again.</p><p>This is a book about changing minds by working with the way people think, not against it, so the people you win with are still on your side afterwards.</p></details>
+      </article>
+      <article class="book">
+        <div class="book__frame">
+          <img src="/images/behind-the-eyes/shadows.jpg" alt="Cover of Behind the Eyes: Shadows"
+               loading="lazy" decoding="async" data-title="Behind the Eyes: Shadows">
+        </div>
+        <p class="book__n">Book 04</p>
+        <h3 class="book__t">Behind the Eyes: <em>Shadows</em></h3>
+        <p class="book__sub">Manipulation, and How to See Through It</p>
+        <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
+        <p class="book__hook">Manipulation rarely looks like a villain. It usually looks like someone you love being upset with you.</p>
+        <details class="book__more"><summary>More</summary><p><em>Shadows</em> names the tactics one by one: gaslighting, love bombing, guilt tripping, the silent treatment, and the move where you raise a problem and somehow end up apologising. It explains why each one works on the mind, and why intelligent, capable people are no safer from them than anyone else.</p><p>It also covers coercive control, how the law has begun to treat it as a crime, why leaving is so much harder than it looks from outside, and practical defences you can start using today. Where to get help is included.</p><p>Learning how a trick works is the surest way to make it stop working on you.</p></details>
+      </article>
+    </div>
+
+    <div class="order" id="order">
+      <div>
+        <h3 class="order__h">Pre-order</h3>
+        <p class="order__lead">
+          All four are open for pre-order at BDT 1,499 instead of BDT 1,999. Tell me what you
+          want and where it goes, and I will confirm your total before any payment.
+        </p>
+
+        <form id="order-form" novalidate>
+          <fieldset>
+            <legend>Choose your books</legend>
+        <div class="pick">
+          <label><input type="checkbox" name="book" value="original" data-title="Behind the Eyes: Original"> Behind the Eyes: Original</label>
+          <select aria-label="Quantity, Behind the Eyes Original" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+        <div class="pick">
+          <label><input type="checkbox" name="book" value="inside" data-title="Behind the Eyes: Inside"> Behind the Eyes: Inside</label>
+          <select aria-label="Quantity, Behind the Eyes Inside" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+        <div class="pick">
+          <label><input type="checkbox" name="book" value="influence" data-title="Behind the Eyes: Influence"> Behind the Eyes: Influence</label>
+          <select aria-label="Quantity, Behind the Eyes Influence" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+        <div class="pick">
+          <label><input type="checkbox" name="book" value="shadows" data-title="Behind the Eyes: Shadows"> Behind the Eyes: Shadows</label>
+          <select aria-label="Quantity, Behind the Eyes Shadows" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+        </div>
+          </fieldset>
+
+          <div class="field code" id="f-code">
+            <label class="order__label" for="o-code">Discount code, if you have one</label>
+            <div class="code__row">
+              <input id="o-code" name="code" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false">
+              <button type="button" id="code-go">Apply</button>
+            </div>
+            <span class="code__msg" id="code-msg" role="status" aria-live="polite"></span>
+          </div>
+
+          <input class="hp" type="text" name="company" id="o-company" tabindex="-1" autocomplete="off" aria-hidden="true">
+
+          <div class="field" id="f-name">
+            <label class="order__label" for="o-name">Full name</label>
+            <input id="o-name" name="name" type="text" autocomplete="name" required>
+            <span class="err">Please enter your name</span>
+          </div>
+
+          <div class="field" id="f-phone">
+            <label class="order__label" for="o-phone">Phone number</label>
+            <input id="o-phone" name="phone" type="tel" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" required>
+            <span class="err">Please enter a valid Bangladeshi mobile number</span>
+          </div>
+
+          <div class="field" id="f-email">
+            <label class="order__label" for="o-email">Email, for your confirmation</label>
+            <input id="o-email" name="email" type="email" inputmode="email" autocomplete="email" placeholder="optional">
+            <span class="err">That email does not look right</span>
+          </div>
+
+          <div class="field" id="f-addr">
+            <label class="order__label" for="o-addr">Delivery address, inside Dhaka</label>
+            <textarea id="o-addr" name="address" autocomplete="street-address" required></textarea>
+            <span class="err">Please enter the full address, including area</span>
+          </div>
+
+          <div class="totals" id="totals" hidden>
+            <div><span id="t-count">0 books</span><span id="t-sub">BDT 0</span></div>
+            <div id="t-save" hidden><span>Bundle, all four</span><span id="t-save-val">- BDT 0</span></div>
+            <div id="t-disc" hidden><span id="t-disc-label">Code</span><span id="t-disc-val">- BDT 0</span></div>
+            <div><span>Delivery, Pathao, approx.</span><span>BDT 100</span></div>
+            <div class="grand"><span>Approximate total</span><span id="t-grand">BDT 0</span></div>
+          </div>
+
+          <div id="ts-slot" class="ts-slot"></div>
+
+          <button type="submit" class="cta cta--cover" id="order-go">Place pre-order <span class="arw" aria-hidden="true">&#8594;</span></button>
+          <p class="order__note">Your order comes straight to me. Nothing is charged here, and I confirm the total before any payment.</p>
+          <p class="order__note" id="order-err" role="alert" hidden></p>
+        </form>
+
+        <div class="order__done" id="order-done" tabindex="-1" role="status" aria-live="polite" hidden>
+          <p class="order__done-h">Order received.</p>
+          <p class="order__ref">Reference <b id="order-ref">BTE</b></p>
+          <p>I will call or message the number you gave to confirm your total, including delivery,
+          and send the bKash details. Nothing is charged until then. Delivery is
+          <b>5 to 7 working days</b>, inside Dhaka.</p>
+          <p class="order__sent" id="order-sent" hidden>A copy is on its way to your email.</p>
+        </div>
+      </div>
+
+      <aside class="order__terms">
+        <section>
+          <h4>Price</h4>
+          <p>BDT 1,499 per book during pre-order, down from BDT 1,999.
+          All four together, <b>BDT 4,999</b> instead of BDT 5,996.</p>
+        </section>
+        <section>
+          <h4>Payment</h4>
+          <p>bKash Personal. The number is sent with your order confirmation, along with the total.</p>
+        </section>
+        <section id="dispatch-term" hidden>
+          <h4>Dispatch</h4>
+          <p>Printing completes <b id="dispatch-when"></b>. Orders are sent out from then,
+          in the order they were placed.</p>
+        </section>
+        <section>
+          <h4>Cancelling</h4>
+          <p>You can cancel any time before your order is dispatched and pay nothing,
+          or get a full refund if you have already paid. Just reply to your confirmation.</p>
+        </section>
+        <section>
+          <h4>Delivery</h4>
+          <p>Inside Dhaka only, by Pathao Parcel. The charge varies by area and is usually around <b>BDT 100</b>, confirmed with your total. Expect delivery in <b>5 to 7 working days</b>.</p>
+        </section>
+      </aside>
+    </div>
+  </section>
+
   <!-- ===================== 08 - CHARACTER ===================== -->
-  <section class="scene character" id="character" aria-labelledby="char-h" data-scene="08">
-    <p class="scene__index"><span class="n">08</span> <span class="t">How I work</span></p>
+  <section class="scene character" id="character" aria-labelledby="char-h" data-scene="09">
+    <p class="scene__index"><span class="n">09</span> <span class="t">How I work</span></p>
 
     <div class="character__grid">
       <div>
@@ -980,8 +1343,8 @@ a{color:inherit;text-decoration:none}
   </section>
 
   <!-- ===================== 09 - CONTACT ===================== -->
-  <section class="scene scene--dark contact" id="contact" aria-labelledby="con-h" data-scene="09">
-    <p class="scene__index"><span class="n">09</span> <span class="t">Contact</span></p>
+  <section class="scene scene--dark contact" id="contact" aria-labelledby="con-h" data-scene="10">
+    <p class="scene__index"><span class="n">10</span> <span class="t">Contact</span></p>
 
     <h2 class="display contact__h" id="con-h"><span>Get in</span><span class="b ox">touch.</span></h2>
 
@@ -1003,8 +1366,8 @@ a{color:inherit;text-decoration:none}
   </section>
 
   <!-- ===================== 10 - COLOPHON ===================== -->
-  <section class="scene colophon" id="colophon" aria-label="Colophon" data-scene="10">
-    <p class="scene__index"><span class="n">10</span> <span class="t">Colophon</span></p>
+  <section class="scene colophon" id="colophon" aria-label="Colophon" data-scene="11">
+    <p class="scene__index"><span class="n">11</span> <span class="t">Colophon</span></p>
 
     <div class="colophon__mid">
       <div class="mono3d" id="mono3d">
@@ -1153,12 +1516,36 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
     sameAs:[PROFILE.socials.linkedin].filter(Boolean)
   });
   document.head.appendChild(s);
+
+  // Each book as its own entity, so the pre-order price and availability
+  // can surface in search results
+  var BOOK_SCHEMA = [{"name": "Behind the Eyes: Original", "sub": "Mastering Yourself Before You Master the Conversation"}, {"name": "Behind the Eyes: Inside", "sub": "What's Really Going On Inside Their Head"}, {"name": "Behind the Eyes: Influence", "sub": "Using Their Own Mind to Win, Without Losing Them"}, {"name": "Behind the Eyes: Shadows", "sub": "Manipulation, and How to See Through It"}];
+  var b = document.createElement("script");
+  b.type = "application/ld+json";
+  b.textContent = JSON.stringify(BOOK_SCHEMA.map(function(x){
+    return {
+      "@context":"https://schema.org","@type":"Book",
+      name: x.name, author: { "@type":"Person", name: PROFILE.name },
+      inLanguage: "en", description: x.sub,
+      offers: {
+        "@type":"Offer", price: "1499", priceCurrency: "BDT",
+        availability: "https://schema.org/PreOrder",
+        url: "https://shimantodewan.com/info#books"
+      }
+    };
+  }));
+  document.head.appendChild(b);
 })();
 
 /* ==========================================================================
    5. SECTION FOLIO + MASTHEAD INVERSION (no motion library required)
    ========================================================================== */
 (function chrome(){
+  // Folio and masthead inversion are decoration. Without IntersectionObserver
+  // an uncaught error here would take down everything later in this script,
+  // including the pre-order form, so bail out rather than throw.
+  if (!("IntersectionObserver" in window)) return;
+
   var mast  = document.getElementById("masthead");
   var folio = document.getElementById("folio");
   var scenes = document.querySelectorAll("[data-scene]");
@@ -1244,6 +1631,261 @@ const PORTRAIT_FALLBACK = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2w
       });
     });
   });
+})();
+
+/* Book covers are added later; until then show the title rather than a
+   broken image icon */
+(function bookCovers(){
+  Array.prototype.forEach.call(document.querySelectorAll(".book__frame img"), function(img){
+    img.addEventListener("error", function(){
+      var t = img.getAttribute("data-title") || "";
+      var ghost = document.createElement("span");
+      ghost.className = "book__ghost";
+      ghost.textContent = t;
+      img.replaceWith(ghost);
+    }, { once: true });
+  });
+})();
+
+/* ==========================================================================
+   6c. PRE-ORDERS
+   The form posts to /api/order, which validates again server side and emails
+   the order. Prices are recomputed there, so nothing here is trusted.
+   ========================================================================== */
+/* Fill these two in when you have them. Both are safe to leave empty:
+   the dispatch line simply does not appear, and the form works without
+   the bot check. */
+const ORDER_CONFIG = {
+  dispatch: "",                 // e.g. "late November 2026"
+  turnstileSiteKey: ""          // from Cloudflare, pairs with TURNSTILE_SECRET
+};
+
+(function preorder(){
+  var form = document.getElementById("order-form");
+  if (!form) return;
+
+  // Dispatch date, shown only once it is known
+  if (ORDER_CONFIG.dispatch) {
+    var dWhen = document.getElementById("dispatch-when");
+    var dTerm = document.getElementById("dispatch-term");
+    if (dWhen && dTerm) { dWhen.textContent = ORDER_CONFIG.dispatch; dTerm.hidden = false; }
+  }
+
+  // Turnstile, loaded only if a site key exists, so nothing third party
+  // is fetched until you switch it on
+  if (ORDER_CONFIG.turnstileSiteKey) {
+    var slot = document.getElementById("ts-slot");
+    if (slot) {
+      var w = document.createElement("div");
+      w.className = "cf-turnstile";
+      w.setAttribute("data-sitekey", ORDER_CONFIG.turnstileSiteKey);
+      w.setAttribute("data-theme", "light");
+      slot.appendChild(w);
+      var ts = document.createElement("script");
+      ts.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      ts.async = true; ts.defer = true;
+      document.head.appendChild(ts);
+    }
+  }
+
+  var PRICE = 1499, BUNDLE = 4999, DELIVERY = 100;
+  var codePercent = 0, codeValue = "";
+  var ALL = ["original", "inside", "influence", "shadows"];
+  var money = function(n){ return "BDT " + n.toLocaleString("en-US"); };
+
+  // Mirrors the server: a complete set of four is a bundle, the rest singles
+  function priceOrder(items){
+    var qty = {};
+    items.forEach(function(i){ qty[i.id] = (qty[i.id] || 0) + i.qty; });
+    var complete = ALL.every(function(id){ return qty[id]; });
+    var sets = complete ? Math.min.apply(null, ALL.map(function(id){ return qty[id]; })) : 0;
+    var units = items.reduce(function(a, i){ return a + i.qty; }, 0);
+    var singles = units - sets * 4;
+    var subtotal = sets * BUNDLE + singles * PRICE;
+    var discount = Math.round(subtotal * codePercent / 100);
+    return {
+      units: units, sets: sets, subtotal: subtotal,
+      saving: sets * (4 * PRICE - BUNDLE),
+      discount: discount, payable: subtotal - discount
+    };
+  }
+
+  var picks  = Array.prototype.slice.call(form.querySelectorAll('input[name="book"]'));
+  var totals = document.getElementById("totals");
+  var tCount = document.getElementById("t-count");
+  var tSub   = document.getElementById("t-sub");
+  var tGrand = document.getElementById("t-grand");
+  var errBox = document.getElementById("order-err");
+  var done   = document.getElementById("order-done");
+  var btn    = document.getElementById("order-go");
+  var btnTxt = btn.innerHTML;
+
+  function chosen(){
+    return picks.filter(function(p){ return p.checked; }).map(function(p){
+      return {
+        id: p.value,
+        title: p.getAttribute("data-title"),
+        qty: parseInt(p.closest(".pick").querySelector("select").value, 10) || 1
+      };
+    });
+  }
+
+  var tSave = document.getElementById("t-save");
+  var tSaveVal = document.getElementById("t-save-val");
+  var tDisc = document.getElementById("t-disc");
+  var tDiscLabel = document.getElementById("t-disc-label");
+  var tDiscVal = document.getElementById("t-disc-val");
+
+  // The code itself never lives in this file. The server says yes or no.
+  var codeInput = document.getElementById("o-code");
+  var codeBtn = document.getElementById("code-go");
+  var codeMsg = document.getElementById("code-msg");
+
+  function applyCode(){
+    var entered = codeInput.value.trim();
+    if (!entered) {
+      codePercent = 0; codeValue = "";
+      codeMsg.className = "code__msg"; codeMsg.textContent = "";
+      recalc(); return;
+    }
+    codeBtn.disabled = true;
+    codeMsg.className = "code__msg";
+    codeMsg.textContent = "Checking";
+    fetch("/api/code", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: entered })
+    })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      codeBtn.disabled = false;
+      if (d && d.valid) {
+        codePercent = d.percent; codeValue = entered.toUpperCase();
+        codeMsg.className = "code__msg is-on";
+        codeMsg.textContent = d.percent + "% off applied";
+        codeInput.readOnly = true;
+      } else {
+        codePercent = 0; codeValue = "";
+        codeMsg.className = "code__msg is-off";
+        codeMsg.textContent = "That code is not recognised";
+      }
+      recalc();
+    })
+    .catch(function(){
+      codeBtn.disabled = false;
+      codePercent = 0; codeValue = "";
+      codeMsg.className = "code__msg is-off";
+      codeMsg.textContent = "Could not check that code";
+      recalc();
+    });
+  }
+
+  codeBtn.addEventListener("click", applyCode);
+  codeInput.addEventListener("keydown", function(e){
+    if (e.key === "Enter") { e.preventDefault(); applyCode(); }
+  });
+  codeInput.addEventListener("input", function(){
+    if (codeInput.readOnly) return;
+    if (codePercent) { codePercent = 0; codeValue = ""; codeMsg.textContent = ""; recalc(); }
+  });
+
+  function recalc(){
+    var p = priceOrder(chosen());
+    totals.hidden = p.units === 0;
+    tCount.textContent = p.units + (p.units === 1 ? " book" : " books");
+    tSub.textContent = money(p.subtotal);
+    tSave.hidden = !p.saving;
+    tSaveVal.textContent = "- " + money(p.saving);
+    tDisc.hidden = !p.discount;
+    tDiscLabel.textContent = "Code " + codeValue + ", " + codePercent + "% off";
+    tDiscVal.textContent = "- " + money(p.discount);
+    tGrand.textContent = money(p.payable + (p.units ? DELIVERY : 0));
+  }
+
+  picks.forEach(function(p){
+    var sel = p.closest(".pick").querySelector("select");
+    p.addEventListener("change", function(){ sel.disabled = !p.checked; recalc(); });
+    sel.addEventListener("change", recalc);
+  });
+
+  function bad(id, isBad){
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle("is-bad", isBad);
+    return !isBad;
+  }
+
+  function fail(msg){
+    errBox.hidden = false;
+    errBox.innerHTML = msg;
+  }
+
+  form.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    var items = chosen();
+    var name  = document.getElementById("o-name").value.trim();
+    var phone = document.getElementById("o-phone").value.trim();
+    var addr  = document.getElementById("o-addr").value.trim();
+    var email = document.getElementById("o-email").value.trim();
+    var digits = phone.replace(/[^0-9]/g, "");
+    var phoneOk = /^(?:88)?01[3-9][0-9]{8}$/.test(digits);
+    // Blank is allowed; anything typed has to be usable
+    var emailOk = !email || /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(email);
+
+    var ok = true;
+    ok = bad("f-name", name.length < 2) && ok;
+    ok = bad("f-phone", !phoneOk) && ok;
+    ok = bad("f-email", !emailOk) && ok;
+    ok = bad("f-addr", addr.length < 10) && ok;
+    if (!items.length) { fail("Choose at least one book."); ok = false; }
+    else if (ok) { errBox.hidden = true; }
+    if (!ok) {
+      var firstBad = form.querySelector(".is-bad input, .is-bad textarea");
+      if (firstBad) firstBad.focus();
+      return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = "Sending";
+    errBox.hidden = true;
+
+    fetch("/api/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: name, phone: phone, address: addr, email: email,
+        items: items.map(function(i){ return { id: i.id, qty: i.qty }; }),
+        company: document.getElementById("o-company").value,
+        code: codeValue,
+        "cf-turnstile-response": (form.querySelector('[name="cf-turnstile-response"]') || {}).value
+      })
+    })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok && d.ok, d: d }; }); })
+    .then(function(res){
+      if (!res.ok) throw new Error((res.d && res.d.error) || "failed");
+      if (window.turnstile) window.turnstile.reset();
+      var ref = document.getElementById("order-ref");
+      if (ref && res.d && res.d.ref) ref.textContent = res.d.ref;
+      var sent = document.getElementById("order-sent");
+      if (sent) sent.hidden = !email;
+      form.hidden = true;
+      done.hidden = false;
+      done.focus();
+    })
+    .catch(function(err){
+      btn.disabled = false;
+      btn.innerHTML = btnTxt;
+      if (window.turnstile) window.turnstile.reset();
+      if (String(err && err.message) === "verification") {
+        return fail("The check did not pass. Please try once more.");
+      }
+      fail('That did not send. Please try again, or email ' +
+           '<a href="mailto:contact@shimantodewan.com" style="color:inherit;text-decoration:underline">contact@shimantodewan.com</a> ' +
+           'with your name, phone, address and the books you want.');
+    });
+  });
+
+  recalc();
 })();
 
 /* ==========================================================================
@@ -1487,5 +2129,6 @@ window.addEventListener("load", function(){
   console.log("%cLAW STUDENT \u00b7 UNIVERSITY OF LONDON \u00b7 SHIMANTODEWAN.COM", css2);
 })();
 </script>
+<script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>

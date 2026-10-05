@@ -1,0 +1,9 @@
+{
+  "name": "shimantodewan-tests",
+  "private": true,
+  "description": "Not deployed. Run from the repo root after any change to the order flow.",
+  "scripts": {
+    "test": "node tests/page.test.js contact/index.html && node tests/page.test.js info/index.html && node tests/api.test.js"
+  },
+  "devDependencies": { "jsdom": "^26.0.0" }
+}
