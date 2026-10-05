@@ -783,6 +783,20 @@ a{color:inherit;text-decoration:none}
   font-family:var(--serif);font-size:clamp(.88rem,1vw,.96rem);line-height:1.6;
   margin:.6rem 0 0;color:var(--muted);
 }
+/* Choose capsule under each book: an outline until chosen, then the filled
+   Contact capsule. It is a toggle; the checkbox in the order form holds the
+   state and this only reads from it and writes to it. */
+.cta--choose{
+  display:flex;width:100%;justify-content:center;gap:.5em;margin-top:1rem;min-height:44px;
+  background:transparent;color:var(--ink);border:1px solid var(--rule);
+  transition:background .35s var(--ease),color .35s var(--ease),border-color .35s var(--ease);
+}
+.cta--choose:hover,.cta--choose:focus-visible{background:transparent;color:var(--ink);border-color:var(--ox)}
+.cta--choose[aria-pressed="true"]{background:var(--ox);border-color:var(--ox);color:var(--ink)}
+.cta--choose[aria-pressed="true"]:hover,.cta--choose[aria-pressed="true"]:focus-visible{background:var(--ox-sm);border-color:var(--ox-sm);color:var(--ivory)}
+.cta__tick{display:none;flex:none}
+.cta--choose[aria-pressed="true"] .cta__tick{display:block}
+.vh{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
 /* ---- Pre-order ---------------------------------------------------------- */
 .order{
@@ -802,18 +816,32 @@ a{color:inherit;text-decoration:none}
   color:var(--muted);padding:0;margin-bottom:.8rem;display:block;
 }
 .pick{display:flex;align-items:center;gap:.9rem;border-bottom:1px solid var(--rule);padding:.7rem 0}
-.pick label{display:flex;align-items:center;gap:.7rem;flex:1;cursor:pointer;font-family:var(--serif);font-size:clamp(.95rem,1.2vw,1.08rem)}
+.pick[hidden]{display:none}
+/* Cart view: the capsule under each book and Remove here do the choosing, so
+   the title is plain text and the checkbox stays in the DOM, unseen, for the
+   logic that reads it */
+.pick label{display:flex;align-items:center;gap:.7rem;flex:1;cursor:default;pointer-events:none;font-family:var(--serif);font-size:clamp(.95rem,1.2vw,1.08rem)}
 .pick input[type=checkbox]{
-  appearance:none;width:16px;height:16px;flex:none;
-  border:1px solid var(--muted);background:none;cursor:pointer;
-  transition:background .25s var(--ease),border-color .25s var(--ease);
+  appearance:none;position:absolute;width:1px;height:1px;margin:0;
+  opacity:0;pointer-events:none;
 }
-.pick input[type=checkbox]:checked{background:var(--ox);border-color:var(--ox)}
 .pick select{
   appearance:none;background:none;border:1px solid var(--rule);color:inherit;
   font-family:var(--mono);font-size:.62rem;padding:.4rem .7rem;cursor:pointer;
 }
 .pick select:disabled{opacity:.35;cursor:default}
+.pick__rm{
+  align-self:stretch;display:flex;align-items:center;margin:-.7rem 0;padding:0 .2rem 0 .6rem;
+  background:none;border:0;color:var(--muted);cursor:pointer;
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.14em;text-transform:uppercase;
+  text-decoration:underline;text-underline-offset:.3em;text-decoration-thickness:1px;
+  transition:color .25s var(--ease);
+}
+.pick__rm:hover,.pick__rm:focus-visible{color:var(--ox-sm)}
+.pick__empty{
+  margin:0;padding:.7rem 0;border-bottom:1px solid var(--rule);
+  font-family:var(--mono);font-size:.58rem;letter-spacing:.12em;color:var(--muted);outline:none;
+}
 .field{margin-bottom:1.3rem}
 .field input,.field textarea{
   width:100%;background:none;border:0;border-bottom:1px solid var(--rule);
@@ -1170,6 +1198,7 @@ a{color:inherit;text-decoration:none}
         <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
         <p class="book__hook">You had the better point. You'd even rehearsed it. So why did the conversation fall apart three minutes in?</p>
         <details class="book__more"><summary>More</summary><p>Most arguments aren't lost on the facts. They're lost the moment emotion takes the wheel. Your voice speeds up, your points come out in the wrong order, and suddenly you're saying "you always" about something that happened once.</p><p><em>Original</em> explains what actually happens in your body and brain when that happens, and what the research says brings you back. It covers why venting makes anger worse, why bottling it up backfires, how to put your thoughts into words someone can actually follow, and how to handle the conversations you've been putting off for months.</p><p>There are no mind tricks and no motivational fluff, just tested ideas and real-life scenarios to practise on.</p></details>
+        <button type="button" class="cta cta--choose" data-book="original" aria-pressed="false"><svg class="cta__tick" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="cta__txt">Choose</span><span class="vh"> Behind the Eyes: Original</span></button>
       </article>
       <article class="book">
         <div class="book__frame">
@@ -1182,6 +1211,7 @@ a{color:inherit;text-decoration:none}
         <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
         <p class="book__hook">Even close friends correctly guess what the other is thinking only around a third of the time. Most people spot a lie barely better than a coin toss.</p>
         <details class="book__more"><summary>More</summary><p>And that famous rule about liars avoiding eye contact? It isn't true.</p><p><em>Inside</em> is about how people really work, and how badly we usually read them. It covers why being close to someone can make you worse at understanding them, the mental shortcuts that bend how you see the people you love, how early attachment shapes the way adults behave in relationships, and what someone usually wants underneath what they actually say.</p><p>Along the way it takes apart the popular body language myths and replaces them with what the evidence supports. You'll come away seeing people more accurately, starting with the ones closest to you.</p></details>
+        <button type="button" class="cta cta--choose" data-book="inside" aria-pressed="false"><svg class="cta__tick" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="cta__txt">Choose</span><span class="vh"> Behind the Eyes: Inside</span></button>
       </article>
       <article class="book">
         <div class="book__frame">
@@ -1194,6 +1224,7 @@ a{color:inherit;text-decoration:none}
         <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
         <p class="book__hook">You can win the argument and lose the person. Most of us do it all the time.</p>
         <details class="book__more"><summary>More</summary><p><em>Influence</em> is about a better kind of winning. It explains the four habits that wreck disagreements before they begin, why pushing harder makes people dig in, and the one question that gets people to rethink their own position. It also shows how negotiators find outcomes where nobody has to lose.</p><p>It draws on research into persuasion, negotiation and close relationships, and it's honest about which famous techniques hold up and which quietly fell apart when scientists tested them again.</p><p>This is a book about changing minds by working with the way people think, not against it, so the people you win with are still on your side afterwards.</p></details>
+        <button type="button" class="cta cta--choose" data-book="influence" aria-pressed="false"><svg class="cta__tick" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="cta__txt">Choose</span><span class="vh"> Behind the Eyes: Influence</span></button>
       </article>
       <article class="book">
         <div class="book__frame">
@@ -1206,6 +1237,7 @@ a{color:inherit;text-decoration:none}
         <p class="book__price"><s>BDT 1,999</s> <b>BDT 1,499</b></p>
         <p class="book__hook">Manipulation rarely looks like a villain. It usually looks like someone you love being upset with you.</p>
         <details class="book__more"><summary>More</summary><p><em>Shadows</em> names the tactics one by one: gaslighting, love bombing, guilt tripping, the silent treatment, and the move where you raise a problem and somehow end up apologising. It explains why each one works on the mind, and why intelligent, capable people are no safer from them than anyone else.</p><p>It also covers coercive control, how the law has begun to treat it as a crime, why leaving is so much harder than it looks from outside, and practical defences you can start using today. Where to get help is included.</p><p>Learning how a trick works is the surest way to make it stop working on you.</p></details>
+        <button type="button" class="cta cta--choose" data-book="shadows" aria-pressed="false"><svg class="cta__tick" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true" focusable="false"><path d="M2 6.5l2.5 2.5L10 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="square"/></svg><span class="cta__txt">Choose</span><span class="vh"> Behind the Eyes: Shadows</span></button>
       </article>
     </div>
 
@@ -1219,22 +1251,27 @@ a{color:inherit;text-decoration:none}
 
         <form id="order-form" novalidate>
           <fieldset>
-            <legend>Choose your books</legend>
-        <div class="pick">
-          <label><input type="checkbox" name="book" value="original" data-title="Behind the Eyes: Original"> Behind the Eyes: Original</label>
+            <legend>Chosen books</legend>
+            <p class="pick__empty" id="picks-empty" tabindex="-1">Nothing chosen yet. Pick a book above.</p>
+        <div class="pick" hidden>
+          <label><input type="checkbox" name="book" value="original" data-title="Behind the Eyes: Original" tabindex="-1" aria-hidden="true"> Behind the Eyes: Original</label>
           <select aria-label="Quantity, Behind the Eyes Original" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+          <button type="button" class="pick__rm" data-remove="original" aria-label="Remove Behind the Eyes: Original">Remove</button>
         </div>
-        <div class="pick">
-          <label><input type="checkbox" name="book" value="inside" data-title="Behind the Eyes: Inside"> Behind the Eyes: Inside</label>
+        <div class="pick" hidden>
+          <label><input type="checkbox" name="book" value="inside" data-title="Behind the Eyes: Inside" tabindex="-1" aria-hidden="true"> Behind the Eyes: Inside</label>
           <select aria-label="Quantity, Behind the Eyes Inside" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+          <button type="button" class="pick__rm" data-remove="inside" aria-label="Remove Behind the Eyes: Inside">Remove</button>
         </div>
-        <div class="pick">
-          <label><input type="checkbox" name="book" value="influence" data-title="Behind the Eyes: Influence"> Behind the Eyes: Influence</label>
+        <div class="pick" hidden>
+          <label><input type="checkbox" name="book" value="influence" data-title="Behind the Eyes: Influence" tabindex="-1" aria-hidden="true"> Behind the Eyes: Influence</label>
           <select aria-label="Quantity, Behind the Eyes Influence" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+          <button type="button" class="pick__rm" data-remove="influence" aria-label="Remove Behind the Eyes: Influence">Remove</button>
         </div>
-        <div class="pick">
-          <label><input type="checkbox" name="book" value="shadows" data-title="Behind the Eyes: Shadows"> Behind the Eyes: Shadows</label>
+        <div class="pick" hidden>
+          <label><input type="checkbox" name="book" value="shadows" data-title="Behind the Eyes: Shadows" tabindex="-1" aria-hidden="true"> Behind the Eyes: Shadows</label>
           <select aria-label="Quantity, Behind the Eyes Shadows" disabled><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>
+          <button type="button" class="pick__rm" data-remove="shadows" aria-label="Remove Behind the Eyes: Shadows">Remove</button>
         </div>
           </fieldset>
 
@@ -1821,6 +1858,55 @@ const ORDER_CONFIG = {
     var sel = p.closest(".pick").querySelector("select");
     p.addEventListener("change", function(){ sel.disabled = !p.checked; recalc(); });
     sel.addEventListener("change", recalc);
+  });
+
+  /* The Choose capsules under the books and the Remove links in the cart are
+     two more views of the same checkboxes. The checkbox stays the single
+     source of truth: they write to it, and everything shown is read back
+     from it. The cart rows stay in book order because they are only ever
+     shown or hidden, never moved. */
+  var picksById = {};
+  picks.forEach(function(p){ picksById[p.value] = p; });
+  var pickEmpty = document.getElementById("picks-empty");
+
+  function paintPick(p){
+    var cap = document.querySelector('.cta--choose[data-book="' + p.value + '"]');
+    p.closest(".pick").hidden = !p.checked;
+    if (cap) {
+      cap.setAttribute("aria-pressed", p.checked ? "true" : "false");
+      cap.querySelector(".cta__txt").textContent = p.checked ? "Chosen" : "Choose";
+    }
+  }
+  function paintCart(){
+    picks.forEach(paintPick);
+    pickEmpty.hidden = picks.some(function(p){ return p.checked; });
+  }
+  function setPick(p, on){
+    p.checked = on;
+    p.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  picks.forEach(function(p){ p.addEventListener("change", paintCart); });
+  Array.prototype.forEach.call(document.querySelectorAll(".cta--choose"), function(cap){
+    cap.addEventListener("click", function(){
+      var p = picksById[cap.getAttribute("data-book")];
+      setPick(p, !p.checked);
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll(".pick__rm"), function(rm){
+    rm.addEventListener("click", function(){
+      setPick(picksById[rm.getAttribute("data-remove")], false);
+      // the pressed link has just left the page, so hand focus on
+      (form.querySelector(".pick:not([hidden]) .pick__rm") || pickEmpty).focus();
+    });
+  });
+
+  paintCart();
+  // a browser can restore ticked boxes without any change event firing
+  window.addEventListener("pageshow", function(){
+    picks.forEach(function(p){ p.closest(".pick").querySelector("select").disabled = !p.checked; });
+    paintCart();
+    recalc();
   });
 
   function bad(id, isBad){

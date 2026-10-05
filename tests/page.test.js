@@ -79,6 +79,90 @@ function run() {
   const boxes = [...d.querySelectorAll('input[name="book"]')];
   ok(boxes.length === 4, 'four book checkboxes');
 
+  // --- Choose capsules and the cart view: views of the checkboxes, nothing more ---
+  {
+    const IDS = ['original', 'inside', 'influence', 'shadows'];
+    const rows = [...d.querySelectorAll('.pick')];
+    const caps = [...d.querySelectorAll('.cta--choose')];
+    const books = [...d.querySelectorAll('.books__grid .book')];
+    const empty = d.getElementById('picks-empty');
+    const legend = d.querySelector('#order-form legend');
+    const txt = (c) => c.querySelector('.cta__txt').textContent;
+    const cap = (id) => d.querySelector('.cta--choose[data-book="' + id + '"]');
+    const box = (id) => d.querySelector('input[name="book"][value="' + id + '"]');
+    const rmBtn = (id) => d.querySelector('.pick__rm[data-remove="' + id + '"]');
+    const shown = () => rows.filter((r) => !r.hidden).map((r) => r.querySelector('input').value);
+    const count = () => d.getElementById('t-count').textContent;
+    const press = (el) => el.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }));
+
+    // structure
+    ok(caps.length === 4 && books.length === 4, 'a Choose capsule under each of the four books');
+    ok(books.every((b, i) => { const c = b.querySelector('.cta--choose'), h = b.querySelector('.book__hook'), m = b.querySelector('.book__more');
+      return c && c.getAttribute('data-book') === IDS[i] && (h.compareDocumentPosition(m) & 4) && (m.compareDocumentPosition(c) & 4); }),
+      'each capsule sits after the hook and the details toggle, for the right book');
+    ok(caps.every((c) => c.tagName === 'BUTTON' && c.getAttribute('type') === 'button' && c.classList.contains('cta')), 'capsules are type=button on .cta');
+    ok(caps.every((c, i) => c.textContent.includes('Behind the Eyes: ' + ['Original', 'Inside', 'Influence', 'Shadows'][i])), 'each capsule names its book for screen readers');
+    ok(legend.textContent.trim() === 'Chosen books', 'legend renamed to Chosen books: ' + legend.textContent.trim());
+    ok(box('original').getAttribute('aria-hidden') === 'true' && box('original').getAttribute('tabindex') === '-1', 'checkboxes are out of the tab order and the accessibility tree');
+    ok(rows.length === 4 && rows.every((r) => r.querySelector('input[type=checkbox]')), 'the checkboxes stay in the DOM');
+
+    // nothing chosen
+    ok(caps.every((c) => txt(c) === 'Choose' && c.getAttribute('aria-pressed') === 'false'), 'every capsule starts as Choose, aria-pressed false');
+    ok(shown().length === 0, 'no cart rows while nothing is chosen');
+    ok(empty.hidden === false && empty.textContent.trim() === 'Nothing chosen yet. Pick a book above.', 'empty line shown: ' + empty.textContent.trim());
+    ok(d.getElementById('totals').hidden === true, 'no totals while nothing is chosen');
+
+    // pressing Choose writes to the checkbox
+    press(cap('inside'));
+    ok(box('inside').checked === true, 'pressing Choose ticks that book\'s checkbox');
+    ok(['original', 'influence', 'shadows'].every((id) => box(id).checked === false), 'and no other checkbox');
+    ok(txt(cap('inside')) === 'Chosen' && cap('inside').getAttribute('aria-pressed') === 'true', 'capsule flips to Chosen, aria-pressed true');
+    ok(box('inside').closest('.pick').querySelector('select').disabled === false, 'its quantity select is enabled');
+    ok(JSON.stringify(shown()) === '["inside"]', 'only that book\'s cart row is shown: ' + JSON.stringify(shown()));
+    ok(empty.hidden === true, 'the empty line goes away');
+    ok(d.getElementById('totals').hidden === false && count() === '1 book' && d.getElementById('t-sub').textContent === 'BDT 1,499', 'totals recalculated: ' + count() + ', ' + d.getElementById('t-sub').textContent);
+    ok(['original', 'influence', 'shadows'].every((id) => txt(cap(id)) === 'Choose' && cap(id).getAttribute('aria-pressed') === 'false'), 'the other capsules stay Choose');
+
+    // the cart follows book order, not choosing order
+    press(cap('shadows')); press(cap('original')); press(cap('influence'));
+    ok(JSON.stringify(shown()) === '["original","inside","influence","shadows"]', 'cart rows follow book order, not the order chosen: ' + JSON.stringify(shown()));
+    ok(count() === '4 books' && d.getElementById('t-sub').textContent === 'BDT 4,999', 'all four chosen price as the bundle: ' + d.getElementById('t-sub').textContent);
+
+    // Remove writes to the checkbox too
+    press(rmBtn('original'));
+    ok(box('original').checked === false, 'Remove unticks the checkbox');
+    ok(txt(cap('original')) === 'Choose' && cap('original').getAttribute('aria-pressed') === 'false', 'and the capsule returns to Choose');
+    ok(JSON.stringify(shown()) === '["inside","influence","shadows"]', 'the row leaves the cart: ' + JSON.stringify(shown()));
+    ok(count() === '3 books' && d.getElementById('t-sub').textContent === 'BDT 4,497', 'totals recalculated after Remove: ' + d.getElementById('t-sub').textContent);
+    ok(d.activeElement === rmBtn('inside'), 'focus moves to the next Remove link, not to nowhere');
+
+    // pressing Chosen turns it back to Choose
+    press(cap('inside'));
+    ok(box('inside').checked === false && txt(cap('inside')) === 'Choose' && cap('inside').getAttribute('aria-pressed') === 'false', 'pressing Chosen toggles it back to Choose');
+    ok(JSON.stringify(shown()) === '["influence","shadows"]', 'and its row leaves the cart');
+
+    // the other direction: the checkbox is the source, the capsule follows it
+    box('influence').checked = false; box('influence').dispatchEvent(new window.Event('change', { bubbles: true }));
+    ok(txt(cap('influence')) === 'Choose' && cap('influence').getAttribute('aria-pressed') === 'false', 'unticking the checkbox returns the capsule to Choose');
+    ok(JSON.stringify(shown()) === '["shadows"]', 'and removes its cart row');
+    box('original').checked = true; box('original').dispatchEvent(new window.Event('change', { bubbles: true }));
+    ok(txt(cap('original')) === 'Chosen' && cap('original').getAttribute('aria-pressed') === 'true', 'ticking the checkbox makes the capsule Chosen');
+    ok(JSON.stringify(shown()) === '["original","shadows"]', 'and shows its cart row, in book order');
+
+    // state restored without a change event (back button, form restore) is read from the checkboxes
+    box('influence').checked = true;
+    window.dispatchEvent(new window.Event('pageshow'));
+    ok(txt(cap('influence')) === 'Chosen' && JSON.stringify(shown()) === '["original","influence","shadows"]', 'a restored tick shows up in the capsule and the cart');
+    ok(box('influence').closest('.pick').querySelector('select').disabled === false && count() === '3 books', 'and in the select and totals');
+
+    // back to empty; focus lands on the message when the last row goes
+    ['original', 'influence', 'shadows'].forEach((id) => press(rmBtn(id)));
+    ok(shown().length === 0 && empty.hidden === false, 'removing every row brings the empty line back');
+    ok(d.activeElement === empty, 'focus moves to the empty line when the last row is removed');
+    ok(d.getElementById('totals').hidden === true && caps.every((c) => txt(c) === 'Choose'), 'totals hide and every capsule is Choose again');
+    ok(boxes.every((b) => !b.checked), 'all checkboxes end unticked, so the checks below start clean');
+  }
+
   function tick(i, qty) {
     const b = boxes[i];
     b.checked = true;
