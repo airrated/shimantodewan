@@ -274,14 +274,14 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
 
   // --- fixed prices, both codes, and the emails showing the same numbers --------
   // The expected figures are written out here by hand, not read from the code
-  // under test. Without a code: a book is 999, all four 3,799. SAKURA30 is the
+  // under test. Without a code: a book is 999, all four 3,799. SAYKAMONI is the
   // fixed-price code: 699 a book, 2,499 for all four. EYES20 is 20% off the
   // books after the bundle, at normal prices, rounded to the nearest taka.
   // Delivery is 100 and never discounted. Savings are shown against every book
   // at 999: a Bundle line, a Code line, or both. Never a percentage.
-  const SAK = { ...ENV, ORDER_CODE_SAKURA30: 'fixed' };
+  const SAY = { ...ENV, ORDER_CODE_SAYKAMONI: 'fixed' };
   const EYES = { ...ENV, ORDER_CODE_EYES20: 'percent:20' };
-  const BOTH = { ...ENV, ORDER_CODE_SAKURA30: 'fixed', ORDER_CODE_EYES20: 'percent:20' };
+  const BOTH = { ...ENV, ORDER_CODE_SAYKAMONI: 'fixed', ORDER_CODE_EYES20: 'percent:20' };
   const one = [{id:'shadows',qty:1}];
   const four = [{id:'original',qty:1},{id:'inside',qty:1},{id:'influence',qty:1},{id:'shadows',qty:1}];
   const five = [{id:'original',qty:2},{id:'inside',qty:1},{id:'influence',qty:1},{id:'shadows',qty:1}];   // a set plus one single
@@ -297,17 +297,17 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
   const person = { name:'Rifat Hossain', phone:'01712345678', email:'rifat@example.com', address:'House 4, Road 11, Banani, Dhaka 1213' };
   {
     // typed: what the buyer types; name: how the code is shown. code: the Code line, 0 when absent
-    const S = ['sakura30', 'SAKURA30'], E = ['eyes20', 'EYES20'];
+    const S = ['saykamoni', 'SAYKAMONI'], E = ['eyes20', 'EYES20'];
     const cases = [
       { label: 'one book',                    items: one,   books: 999,  grand: 1099, bundle: 0,   code: 0 },
       { label: 'four books',                  items: four,  books: 3799, grand: 3899, bundle: 197, code: 0 },
       { label: 'five books (set + single)',   items: five,  books: 4798, grand: 4898, bundle: 197, code: 0 },
       { label: 'eight books (two sets)',      items: eight, books: 7598, grand: 7698, bundle: 394, code: 0 },
 
-      { label: 'SAKURA30, one book',          items: one,   cd: S, books: 699,  grand: 799,  bundle: 0,   code: 300 },
-      { label: 'SAKURA30, four books',        items: four,  cd: S, books: 2499, grand: 2599, bundle: 197, code: 1300 },
-      { label: 'SAKURA30, five books',        items: five,  cd: S, books: 3198, grand: 3298, bundle: 197, code: 1600 },
-      { label: 'SAKURA30, eight books',       items: eight, cd: S, books: 4998, grand: 5098, bundle: 394, code: 2600 },
+      { label: 'SAYKAMONI, one book',          items: one,   cd: S, books: 699,  grand: 799,  bundle: 0,   code: 300 },
+      { label: 'SAYKAMONI, four books',        items: four,  cd: S, books: 2499, grand: 2599, bundle: 197, code: 1300 },
+      { label: 'SAYKAMONI, five books',        items: five,  cd: S, books: 3198, grand: 3298, bundle: 197, code: 1600 },
+      { label: 'SAYKAMONI, eight books',       items: eight, cd: S, books: 4998, grand: 5098, bundle: 394, code: 2600 },
 
       { label: 'EYES20, one book',            items: one,   cd: E, books: 799,  grand: 899,  bundle: 0,   code: 200 },
       { label: 'EYES20, four books',          items: four,  cd: E, books: 3039, grand: 3139, bundle: 197, code: 760 },
@@ -355,18 +355,18 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
   // percentage, to drive it.
   {
     const tweak = (from, to) => { const s = src.replace(from, to); if (s === src) throw new Error('test setup: ' + from + ' not found in api/order.js'); return s; };
-    const place = async (h, items, code) => { const r = res(); await h.handler({ method:'POST', headers:{}, body:{ ...person, items, code: code || 'sakura30' } }, r); return r; };
+    const place = async (h, items, code) => { const r = res(); await h.handler({ method:'POST', headers:{}, body:{ ...person, items, code: code || 'saykamoni' } }, r); return r; };
 
     // at the real prices it never fires, for either code, even on the cheapest orders
     {
       const h = load(BOTH);
-      for (const code of ['sakura30', 'eyes20']) for (const items of [one, four, five, eight]) await place(h, items, code);
+      for (const code of ['saykamoni', 'eyes20']) for (const items of [one, four, five, eight]) await place(h, items, code);
       ok(h.warns.length === 0, 'at the real prices the floor never fires for either code and nothing is logged', h.warns.length + ' warnings');
     }
 
     // four for 1,999 is under the floor of 4 x 599 = 2,396
     {
-      const h = load(SAK, null, null, tweak('SET_CODE = 2499', 'SET_CODE = 1999'));
+      const h = load(SAY, null, null, tweak('SET_CODE = 2499', 'SET_CODE = 1999'));
       const r = await place(h, four), owner = ownerOf(h.calls), buyer = buyerOf(h.calls), oh = flat(owner.html);
       ok(r.code === 200, 'an order that hits the floor is still accepted');
       ok(owner.text.includes('Books total: BDT 2,396'), 'the books are charged the floor, BDT 2,396', (owner.text.match(/Books total:.*/) || [''])[0]);
@@ -384,7 +384,7 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
 
     // one book at 399 is under the floor of 599
     {
-      const h = load(SAK, null, null, tweak('SINGLE_CODE = 699', 'SINGLE_CODE = 399'));
+      const h = load(SAY, null, null, tweak('SINGLE_CODE = 699', 'SINGLE_CODE = 399'));
       const r = await place(h, one), owner = ownerOf(h.calls);
       ok(owner.text.includes('Books total: BDT 599') && owner.text.includes('Approximate total: BDT 699'), 'a single is charged the floor, BDT 599');
       ok(h.warns.length === 1 && h.warns[0].includes('BDT 399') && h.warns[0].includes('BDT 599') && h.warns[0].includes(r.body.ref), 'and the warning names 399, 599 and the reference', h.warns[0]);
@@ -407,7 +407,7 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
 
     // prices above the floor are never touched: 2,396 is exactly 599 a book, 2,400 is above it
     for (const [price, tag] of [[2396, 'exactly at'], [2400, 'above']]) {
-      const h = load(SAK, null, null, tweak('SET_CODE = 2499', 'SET_CODE = ' + price));
+      const h = load(SAY, null, null, tweak('SET_CODE = 2499', 'SET_CODE = ' + price));
       await place(h, four);
       ok(ownerOf(h.calls).text.includes('Books total: BDT ' + fmt(price)) && h.warns.length === 0, 'a set price ' + tag + ' the floor is charged as it is, with no warning', fmt(price));
     }
@@ -501,28 +501,32 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
         };
       };
 
-      // no code, then each code in turn on the same page. Applying a second code
-      // must replace the first (they never stack), and an unknown code must
-      // leave no discount at all.
-      for (const typed of [null, 'sakura30', 'eyes20', 'sakura30', 'nope']) {
-        if (typed) {
+      // no code, then each code in turn on the same page, with the field never
+      // locked. Applying a second code replaces the first (they never stack); an
+      // unknown code leaves the applied one in place; an empty field plus Apply
+      // removes it. The page must agree with the server for whichever is applied.
+      let applied = null;
+      for (const typed of [null, 'saykamoni', 'eyes20', 'saykamoni', 'nope', '']) {
+        if (typed !== null) {
           const input = d.getElementById('o-code');
-          input.readOnly = false;
+          ok(input.readOnly === false, tag + ': the code field is editable before typing "' + typed + '"');
           input.value = typed;
           d.getElementById('code-go').dispatchEvent(new w.Event('click', { bubbles: true }));
           await wait(60);
           const msg = d.getElementById('code-msg').textContent;
-          const want = typed === 'nope' ? 'That code is not recognised' : 'Code applied';
-          ok(msg === want && !/%/.test(msg), tag + ': typing ' + typed + ' gives "' + want + '", no percentage', msg);
+          const unknown = typed === 'nope';
+          const want = typed === '' ? '' : unknown ? 'That code is not recognised. ' + applied.toUpperCase() + ' is still applied.' : 'Code applied';
+          if (typed === '') applied = null; else if (!unknown) applied = typed;
+          ok(msg === want && !/%/.test(msg), tag + ': Apply with "' + typed + '" gives "' + want + '", no percentage', msg);
         }
         for (const [label, sel] of sels) {
           choose(sel);
-          const page = fromPage(), srv = await fromServer(sel, typed);
-          ok(JSON.stringify(page) === JSON.stringify(srv), tag + ': ' + label + ' with ' + (typed || 'no code') + ' - page and server agree', 'page ' + JSON.stringify(page) + ' / server ' + JSON.stringify(srv));
+          const page = fromPage(), srv = await fromServer(sel, applied);
+          ok(JSON.stringify(page) === JSON.stringify(srv), tag + ': ' + label + ' with ' + (applied || 'no code') + (typed === 'nope' ? ' (after an unknown code)' : '') + ' - page and server agree', 'page ' + JSON.stringify(page) + ' / server ' + JSON.stringify(srv));
         }
-        if (typed && typed !== 'nope') {
+        if (applied) {
           choose(sels[3][1]);
-          const name = typed.toUpperCase();
+          const name = applied.toUpperCase();
           ok(d.getElementById('t-disc-label').textContent === 'Code ' + name, tag + ': the code row is labelled Code ' + name + ', no percentage', d.getElementById('t-disc-label').textContent);
           ok(!/%/.test(d.getElementById('totals').textContent), tag + ': no percentage anywhere in the totals with ' + name);
         }
@@ -681,18 +685,18 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     const FULL = ['Books total: BDT 3,799', 'Approximate total: BDT 3,899'];       // four, no discount
     const isFull = (m) => FULL.every((s) => m.text.includes(s)) && !/\n  Code /.test(m.text);
 
-    const sak = await order(BOTH, { code: 'sakura30' });
-    ok(sak.r.code === 200, 'order with a valid code accepted');
-    ok(sak.mail.text.includes('Code SAKURA30:  - BDT 1,300') && sak.mail.text.includes('Books total: BDT 2,499') && sak.mail.text.includes('Approximate total: BDT 2,599'), 'SAKURA30 gives the fixed code prices: 2,499 for four');
+    const say = await order(BOTH, { code: 'saykamoni' });
+    ok(say.r.code === 200, 'order with a valid code accepted');
+    ok(say.mail.text.includes('Code SAYKAMONI:  - BDT 1,300') && say.mail.text.includes('Books total: BDT 2,499') && say.mail.text.includes('Approximate total: BDT 2,599'), 'SAYKAMONI gives the fixed code prices: 2,499 for four');
     const eyes = await order(BOTH, { code: 'eyes20' });
     ok(eyes.mail.text.includes('Code EYES20:  - BDT 760') && eyes.mail.text.includes('Books total: BDT 3,039') && eyes.mail.text.includes('Approximate total: BDT 3,139'), 'EYES20 takes 20% off the books after the bundle: 3,799 becomes 3,039, delivery untouched');
-    ok(!/%/.test(sak.mail.text + eyes.mail.text), 'no percentage in either email');
-    ok(sak.warns.length === 0 && eyes.warns.length === 0, 'well-formed variables log nothing');
+    ok(!/%/.test(say.mail.text + eyes.mail.text), 'no percentage in either email');
+    ok(say.warns.length === 0 && eyes.warns.length === 0, 'well-formed variables log nothing');
 
     // case and spaces in the typed code are never the reason it fails
-    for (const typed of ['  Sakura 30 ', 'SAKURA30', 'sakura30']) {
+    for (const typed of ['  Say Ka Moni ', 'SAYKAMONI', 'saykamoni']) {
       const x = await order(BOTH, { code: typed });
-      ok(x.mail.text.includes('Code SAKURA30:  - BDT 1,300'), 'typed "' + typed + '" is SAKURA30');
+      ok(x.mail.text.includes('Code SAYKAMONI:  - BDT 1,300'), 'typed "' + typed + '" is SAYKAMONI');
     }
     for (const typed of [' Eyes 20 ', 'EYES20', 'eyes20']) {
       const x = await order(BOTH, { code: typed });
@@ -700,13 +704,13 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     }
 
     // only one code per order, and they never stack
-    for (const typed of ['SAKURA30 EYES20', 'SAKURA30,EYES20', 'EYES20+SAKURA30', 'SAKURA30EYES20']) {
+    for (const typed of ['SAYKAMONI EYES20', 'SAYKAMONI,EYES20', 'EYES20+SAYKAMONI', 'SAYKAMONIEYES20']) {
       const x = await order(BOTH, { code: typed });
       ok(isFull(x.mail), 'two codes in one field are not a code at all: "' + typed + '"');
     }
-    const extra = await order(BOTH, { code: 'EYES20', codes: ['SAKURA30'], code2: 'SAKURA30', coupon: 'SAKURA30' });
-    ok(extra.mail.text.includes('Books total: BDT 3,039') && !extra.mail.text.includes('SAKURA30'), 'extra code fields in the request are ignored; only the one code applies');
-    const both = await order(BOTH, { code: 'sakura30' }, five);
+    const extra = await order(BOTH, { code: 'EYES20', codes: ['SAYKAMONI'], code2: 'SAYKAMONI', coupon: 'SAYKAMONI' });
+    ok(extra.mail.text.includes('Books total: BDT 3,039') && !extra.mail.text.includes('SAYKAMONI'), 'extra code fields in the request are ignored; only the one code applies');
+    const both = await order(BOTH, { code: 'saykamoni' }, five);
     ok(both.mail.text.includes('Books total: BDT 3,198') && (both.mail.text.match(/\n  Code /g) || []).length === 1, 'an order carries at most one Code line');
 
     // a code that does not exist changes nothing
@@ -719,25 +723,25 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     ok(isFull(forged.mail), 'forged price, kind and percent fields in the request are ignored');
 
     // no variables set: nothing is discounted
-    const none = await order({ ...ENV }, { code: 'SAKURA30' });
+    const none = await order({ ...ENV }, { code: 'SAYKAMONI' });
     ok(isFull(none.mail), 'with no ORDER_CODE_ variables set no code works');
 
     // adding a third code is just adding a variable (the README example), no code change
     const third = await order({ ...BOTH, ORDER_CODE_FRIENDS10: 'percent:10' }, { code: 'friends10' }, one);
     ok(third.mail.text.includes('Code FRIENDS10:  - BDT 100') && third.mail.text.includes('Books total: BDT 899') && third.mail.text.includes('Approximate total: BDT 999'), 'a third code, percent:10, works with only a new variable: 899 for one book');
     const third2 = await order({ ...BOTH, ORDER_CODE_FRIENDS10: 'fixed' }, { code: 'friends10' }, one);
-    ok(third2.mail.text.includes('Books total: BDT 699'), 'a third fixed code gets the same fixed prices as SAKURA30');
+    ok(third2.mail.text.includes('Books total: BDT 699'), 'a third fixed code gets the same fixed prices as SAYKAMONI');
 
     // retiring a code is deleting its variable
-    const retired = await order({ ...ENV, ORDER_CODE_SAKURA30: 'fixed' }, { code: 'eyes20' });
+    const retired = await order({ ...ENV, ORDER_CODE_SAYKAMONI: 'fixed' }, { code: 'eyes20' });
     ok(isFull(retired.mail), 'with ORDER_CODE_EYES20 deleted, EYES20 is rejected');
-    const kept = await order({ ...ENV, ORDER_CODE_SAKURA30: 'fixed' }, { code: 'sakura30' });
+    const kept = await order({ ...ENV, ORDER_CODE_SAYKAMONI: 'fixed' }, { code: 'saykamoni' });
     ok(kept.mail.text.includes('Books total: BDT 2,499'), 'and the other code is unaffected');
 
     // variable names and values are read forgivingly
     const lower = await order({ ...ENV, order_code_eyes20: 'Percent : 20' }, { code: 'EYES20' });
     ok(lower.mail.text.includes('Books total: BDT 3,039') && lower.warns.length === 0, 'a lower-case variable name and "Percent : 20" are understood');
-    const loud = await order({ ...ENV, ORDER_CODE_SAKURA30: '  FIXED ' }, { code: 'SAKURA30' });
+    const loud = await order({ ...ENV, ORDER_CODE_SAYKAMONI: '  FIXED ' }, { code: 'SAYKAMONI' });
     ok(loud.mail.text.includes('Books total: BDT 2,499') && loud.warns.length === 0, 'FIXED with spaces around it is understood');
     const lead0 = await order({ ...ENV, ORDER_CODE_EYES20: 'percent:05' }, { code: 'EYES20' }, one);
     ok(lead0.mail.text.includes('Code EYES20:  - BDT 50') && lead0.warns.length === 0, 'percent:05 is five per cent');
@@ -747,11 +751,11 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     ok(!highest.warns.some((w) => /malformed/.test(w)) && highest.mail.text.includes('Books total: BDT 599'), 'percent:90 is allowed (the limit), and the floor then holds the book at 599');
 
     // the earlier variables are retired: not read, and never mistaken for a code
-    const oldList = await order({ ...ENV, ORDER_CODES: 'SAKURA30,EYES20' }, { code: 'SAKURA30' });
+    const oldList = await order({ ...ENV, ORDER_CODES: 'SAYKAMONI,EYES20' }, { code: 'SAYKAMONI' });
     ok(isFull(oldList.mail) && oldList.warns.length === 0, 'the old ORDER_CODES list is no longer read');
     const oldPct = await order({ ...BOTH, ORDER_CODE_PERCENT: '25' }, { code: 'percent' });
     ok(isFull(oldPct.mail) && oldPct.warns.length === 0, 'a leftover ORDER_CODE_PERCENT is not a code called PERCENT, and logs nothing');
-    const oldPct2 = await order({ ...BOTH, ORDER_CODE_PERCENT: '25' }, { code: 'sakura30' });
+    const oldPct2 = await order({ ...BOTH, ORDER_CODE_PERCENT: '25' }, { code: 'saykamoni' });
     ok(oldPct2.mail.text.includes('Books total: BDT 2,499') && oldPct2.warns.length === 0, 'and it does not disturb the real codes');
   }
 
@@ -766,7 +770,7 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
     const malformed = ['percent:abc', 'percent:', 'percent:0', 'percent:95', 'percent:100', 'percent:20.5', 'percent:-5', 'percent:2 0',
                        'percent', 'percent 20', '20', '20%', 'fixed:20', 'pct:20', 'free', '', '   '];
     for (const v of malformed) {
-      const env = { ...ENV, ORDER_CODE_SAKURA30: 'fixed', ORDER_CODE_EYES20: v };
+      const env = { ...ENV, ORDER_CODE_SAYKAMONI: 'fixed', ORDER_CODE_EYES20: v };
       const bad = await place(env, 'eyes20');
       ok(!bad.threw && bad.r.code === 200, 'ORDER_CODE_EYES20=' + JSON.stringify(v) + ': no crash, the order is still accepted');
       ok(bad.mail.text.includes('Books total: BDT 3,799') && bad.mail.text.includes('Approximate total: BDT 3,899') && !/\n  Code /.test(bad.mail.text), 'ORDER_CODE_EYES20=' + JSON.stringify(v) + ': no discount at all, never 0% off or a guess');
@@ -781,13 +785,13 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
       ok(ar.code === 200 && JSON.stringify(ar.body) === '{"valid":false}', 'ORDER_CODE_EYES20=' + JSON.stringify(v) + ': /api/code says not valid', JSON.stringify(ar.body));
 
       // and it breaks only that one code
-      const other = await place(env, 'sakura30');
-      ok(other.mail.text.includes('Books total: BDT 2,499') && other.warns.length === 0, 'ORDER_CODE_EYES20=' + JSON.stringify(v) + ': SAKURA30 keeps working and logs nothing');
+      const other = await place(env, 'saykamoni');
+      ok(other.mail.text.includes('Books total: BDT 2,499') && other.warns.length === 0, 'ORDER_CODE_EYES20=' + JSON.stringify(v) + ': SAYKAMONI keeps working and logs nothing');
     }
 
     // a malformed fixed-price variable is the same story
-    const badFixed = await place({ ...ENV, ORDER_CODE_SAKURA30: 'fixd' }, 'sakura30');
-    ok(!badFixed.threw && badFixed.mail.text.includes('Books total: BDT 3,799') && badFixed.warns.length === 1 && badFixed.warns[0].includes('ORDER_CODE_SAKURA30'), 'ORDER_CODE_SAKURA30=fixd is invalid too, with a warning naming that variable');
+    const badFixed = await place({ ...ENV, ORDER_CODE_SAYKAMONI: 'fixd' }, 'saykamoni');
+    ok(!badFixed.threw && badFixed.mail.text.includes('Books total: BDT 3,799') && badFixed.warns.length === 1 && badFixed.warns[0].includes('ORDER_CODE_SAYKAMONI'), 'ORDER_CODE_SAYKAMONI=fixd is invalid too, with a warning naming that variable');
 
     // the warning fires when somebody tries the code, not on every order
     const unused = await place({ ...BOTH, ORDER_CODE_EYES20: 'percent:abc' }, '');
@@ -804,15 +808,15 @@ const lpushOf = (calls) => calls.find(c => c.url.includes('/lpush/orders'));
       new Function('module', 'exports', 'require', codeSrc)(mod, mod.exports, () => lib.exports);
       const r = res(); await mod.exports({ method: method || 'POST', body, headers: {} }, r); return r;
     };
-    const s = await run(BOTH, { code: ' sakura 30 ' });
-    ok(s.code === 200 && JSON.stringify(s.body) === '{"valid":true,"code":"SAKURA30","kind":"fixed"}', '/api/code: SAKURA30 is a fixed-price code, in its clean name', JSON.stringify(s.body));
+    const s = await run(BOTH, { code: ' say ka moni ' });
+    ok(s.code === 200 && JSON.stringify(s.body) === '{"valid":true,"code":"SAYKAMONI","kind":"fixed"}', '/api/code: SAYKAMONI is a fixed-price code, in its clean name', JSON.stringify(s.body));
     const e = await run(BOTH, { code: 'Eyes20' });
     ok(e.code === 200 && JSON.stringify(e.body) === '{"valid":true,"code":"EYES20","kind":"percent","percent":20}', '/api/code: EYES20 is a percent code and says which percent', JSON.stringify(e.body));
     const no = await run(BOTH, { code: 'nope' });
     ok(no.code === 200 && JSON.stringify(no.body) === '{"valid":false}', '/api/code: unknown code is just not valid', JSON.stringify(no.body));
     const empty = await run(BOTH, {});
     ok(JSON.stringify(empty.body) === '{"valid":false}', '/api/code: no code typed is not valid');
-    const none = await run({}, { code: 'SAKURA30' });
+    const none = await run({}, { code: 'SAYKAMONI' });
     ok(none.body.valid === false, '/api/code rejects everything when no ORDER_CODE_ variable is set');
     const text = await run(BOTH, '{"code":"eyes20"}');
     ok(text.body.valid === true && text.body.kind === 'percent', '/api/code reads a JSON string body too');

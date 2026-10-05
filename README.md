@@ -88,7 +88,7 @@ ORDER_CODE_<NAME>   =   what the code does
 ```
 
 `<NAME>` is the code buyers type, in capitals, using letters and digits
-(for example `SAKURA30`). The value is exactly one of these two:
+(for example `SAYKAMONI`). The value is exactly one of these two:
 
 | Value | What the code does |
 |---|---|
@@ -99,7 +99,7 @@ ORDER_CODE_<NAME>   =   what the code does
 
 | Name | Value |
 |---|---|
-| `ORDER_CODE_SAKURA30` | `fixed` |
+| `ORDER_CODE_SAYKAMONI` | `fixed` |
 | `ORDER_CODE_EYES20` | `percent:20` |
 
 Then **redeploy**. Vercel only applies a changed variable to a new
@@ -109,6 +109,11 @@ The rules:
 
 - One code per order. The form takes a single code, and codes never stack.
 - Buyers can type the code in any case and with spaces: `eyes 20` is `EYES20`.
+- The code field is never locked. To switch codes a buyer edits the field and
+  presses Apply again, which replaces the first. A code that is not recognised
+  leaves the applied one in place, and clearing the field then pressing Apply
+  removes the code. The order always carries the code that is applied, not
+  whatever happens to be typed in the field.
 - The 599 a book floor applies to every outcome, and delivery is never
   discounted.
 - The codes exist only here. They are never written into the pages, so a
@@ -128,7 +133,7 @@ Say you want `FRIENDS10`, ten per cent off:
    applied" and a "Code FRIENDS10" line in the totals.
 
 For another fixed-price code, the value is `fixed`, and it gives the same
-699 and 2,499 as `SAKURA30`.
+699 and 2,499 as `SAYKAMONI`.
 
 #### Retiring a code
 
@@ -177,7 +182,7 @@ the book title rather than a broken image.
 
 Prices are fixed amounts in BDT. A `fixed` code switches to the code prices; a `percent` code takes a share off the books after the bundle.
 
-| | No code | `fixed` code (SAKURA30) | `percent:20` code (EYES20) |
+| | No code | `fixed` code (SAYKAMONI) | `percent:20` code (EYES20) |
 |---|---|---|---|
 | One book | 999 | 699 | 799 |
 | All four | 3,799, against 3,996 for four singles | 2,499 | 3,039 |
@@ -189,7 +194,7 @@ Prices are fixed amounts in BDT. A `fixed` code switches to the code prices; a `
 Each complete set of four is priced as a set and any extras as singles. A
 percent code rounds its discount to the nearest taka (20% of 4,798 is 959.6,
 so 960). The totals show the saving against every book at 999: a "Bundle"
-line when only the bundle applies, a "Code SAKURA30" or "Code EYES20" line when
+line when only the bundle applies, a "Code SAYKAMONI" or "Code EYES20" line when
 only the code applies, and both when both do. Never a percentage.
 
 The floor is a guard, not something that fires at these prices (2,499 for

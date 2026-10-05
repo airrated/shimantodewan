@@ -1832,23 +1832,23 @@ const ORDER_CONFIG = {
       codeBtn.disabled = false;
       var found = readOffer(d);
       if (found) {
+        // Replaces any code already applied. The field stays editable.
         offer = found;
         codeValue = d.code || entered.toUpperCase();
+        codeInput.value = codeValue;
         codeMsg.className = "code__msg is-on";
         codeMsg.textContent = "Code applied";
-        codeInput.readOnly = true;
       } else {
-        codeValue = ""; offer = null;
+        // A code that does not work never throws away one that does
         codeMsg.className = "code__msg is-off";
-        codeMsg.textContent = "That code is not recognised";
+        codeMsg.textContent = "That code is not recognised" + (codeValue ? ". " + codeValue + " is still applied." : "");
       }
       recalc();
     })
     .catch(function(){
       codeBtn.disabled = false;
-      codeValue = ""; offer = null;
       codeMsg.className = "code__msg is-off";
-      codeMsg.textContent = "Could not check that code";
+      codeMsg.textContent = "Could not check that code" + (codeValue ? ". " + codeValue + " is still applied." : "");
       recalc();
     });
   }
@@ -1857,9 +1857,19 @@ const ORDER_CONFIG = {
   codeInput.addEventListener("keydown", function(e){
     if (e.key === "Enter") { e.preventDefault(); applyCode(); }
   });
+  // Editing the field changes nothing until Apply is pressed: the applied code
+  // and the totals stay as they were. The message says what Apply will do.
   codeInput.addEventListener("input", function(){
-    if (codeInput.readOnly) return;
-    if (codeValue) { codeValue = ""; offer = null; codeMsg.textContent = ""; recalc(); }
+    var typed = codeInput.value.replace(/\s+/g, "").toUpperCase();
+    if (!codeValue) {
+      if (codeMsg.className.indexOf("is-off") > -1) { codeMsg.className = "code__msg"; codeMsg.textContent = ""; }
+      return;
+    }
+    if (typed === codeValue) { codeMsg.className = "code__msg is-on"; codeMsg.textContent = "Code applied"; }
+    else {
+      codeMsg.className = "code__msg";
+      codeMsg.textContent = typed ? "Press Apply to use this code instead" : "Press Apply to remove the code";
+    }
   });
 
   function recalc(){

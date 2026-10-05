@@ -20,8 +20,8 @@ const dom = new JSDOM(html, {
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
-        const good = String(sent.code).trim().toUpperCase() === 'SAKURA30';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve(good ? { valid:true, code:'SAKURA30', kind:'fixed' } : { valid:false }) });
+        const good = String(sent.code).trim().toUpperCase() === 'SAYKAMONI';
+        return Promise.resolve({ ok:true, json: () => Promise.resolve(good ? { valid:true, code:'SAYKAMONI', kind:'fixed' } : { valid:false }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
@@ -243,7 +243,7 @@ function run() {
   const codeBtn = d.getElementById('code-go');
   const codeMsg = d.getElementById('code-msg');
   ok(!!codeInput && !!codeBtn, 'discount code field present');
-  ok(!/SAKURA30|SAKURA25|PREORDER20/i.test(d.documentElement.innerHTML), 'no discount code appears in the page source');
+  ok(!/SAYKAMONI|SAKURA25|PREORDER20/i.test(d.documentElement.innerHTML), 'no discount code appears in the page source');
 
   codeInput.value = 'WRONGCODE';
   codeBtn.dispatchEvent(new window.Event('click', { bubbles: true }));
