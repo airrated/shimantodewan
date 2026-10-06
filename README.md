@@ -88,18 +88,19 @@ ORDER_CODE_<NAME>   =   what the code does
 ```
 
 `<NAME>` is the code buyers type, in capitals, using letters and digits
-(for example `SAYKAMONI`). The value is exactly one of these two:
+(for example `SAYKAMONI`). The value is exactly one of these three:
 
 | Value | What the code does |
 |---|---|
 | `fixed` | Switches the order to the fixed code prices: 699 a single, 2,499 for all four |
 | `percent:N` | Takes N per cent off the books after any bundle, at normal prices. `N` is a whole number from 1 to 90, for example `percent:20` |
+| `free` | A complete waiver: the books and the delivery charge are both free, so the total is BDT 0 |
 
 **Set these two today:**
 
 | Name | Value |
 |---|---|
-| `ORDER_CODE_SAYKAMONI` | `fixed` |
+| `ORDER_CODE_SAYKAMONI` | `free` |
 | `ORDER_CODE_EYES20` | `percent:20` |
 
 Then **redeploy**. Vercel only applies a changed variable to a new
@@ -115,7 +116,7 @@ The rules:
   removes the code. The order always carries the code that is applied, not
   whatever happens to be typed in the field.
 - The 599 a book floor applies to every outcome, and delivery is never
-  discounted.
+  discounted. The one exception is a `free` code, which is a deliberate waiver.
 - The codes exist only here. They are never written into the pages, so a
   buyer cannot find one by reading the source. The browser asks `/api/code`
   whether a typed code is real and what kind it is, and `/api/order` looks it
@@ -132,8 +133,29 @@ Say you want `FRIENDS10`, ten per cent off:
 4. Try it on the site: type `friends10`, press Apply. You should see "Code
    applied" and a "Code FRIENDS10" line in the totals.
 
-For another fixed-price code, the value is `fixed`, and it gives the same
-699 and 2,499 as `SAYKAMONI`.
+For a fixed-price code, the value is `fixed`: 699 a single and 2,499 for all
+four, the same for every `fixed` code.
+
+#### A free code
+
+A code whose value is `free` waives everything, so please treat it as a
+private code. For a `free` order:
+
+- The books and the delivery charge are both BDT 0, and the 599 a book floor
+  does not apply. Delivery shows as 0 in the totals, not hidden.
+- No confirmation email goes to the buyer. The owner email still goes to
+  `ORDER_TO` and `ORDER_TO_CC`, with `FREE ORDER` in the subject, a banner
+  saying nothing is to be paid, and the status line `NO CONFIRMATION SENT,
+  FREE ORDER`, so a skipped email is never mistaken for a failed one.
+- The order is still written to the Upstash log, with `free: true` and the
+  reference.
+- The page shows its own messages instead of the usual ones: a line under the
+  code field, and "Your order is confirmed my beautiful baby" with the
+  reference after the order.
+
+There is no limit on how many books a free order can hold (up to five of each
+title), and no limit on how often the code is used. Anyone who has the code
+can use it. To stop a free code, delete its variable and redeploy.
 
 #### Retiring a code
 
@@ -182,7 +204,7 @@ the book title rather than a broken image.
 
 Prices are fixed amounts in BDT. A `fixed` code switches to the code prices; a `percent` code takes a share off the books after the bundle.
 
-| | No code | `fixed` code (SAYKAMONI) | `percent:20` code (EYES20) |
+| | No code | `fixed` code | `percent:20` code (EYES20) |
 |---|---|---|---|
 | One book | 999 | 699 | 799 |
 | All four | 3,799, against 3,996 for four singles | 2,499 | 3,039 |
@@ -194,8 +216,9 @@ Prices are fixed amounts in BDT. A `fixed` code switches to the code prices; a `
 Each complete set of four is priced as a set and any extras as singles. A
 percent code rounds its discount to the nearest taka (20% of 4,798 is 959.6,
 so 960). The totals show the saving against every book at 999: a "Bundle"
-line when only the bundle applies, a "Code SAYKAMONI" or "Code EYES20" line when
-only the code applies, and both when both do. Never a percentage.
+line when only the bundle applies, a "Code EYES20" (or whatever the code is) line
+when only the code applies, and both when both do. Never a percentage. A `free`
+code brings the books and the delivery to 0, and the floor does not apply to it.
 
 The floor is a guard, not something that fires at these prices (2,499 for
 four is 625 a book). If a price change ever pushes the books under 599 each,

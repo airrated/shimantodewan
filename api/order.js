@@ -36,10 +36,14 @@ const CATALOGUE = {
 
 const money = (n) => "BDT " + n.toLocaleString("en-US");
 
+// Delivery is never discounted, except on a free order, where it is waived
+const deliveryFor = (o) => (o.free ? 0 : DELIVERY);
+
 // Each complete set of four is priced as a set and the rest as singles. A
-// valid code (`offer`, from lib/codes) is one of two kinds: "fixed" swaps in
+// valid code (`offer`, from lib/codes) is one of three kinds: "fixed" swaps in
 // the code prices, "percent" takes that much off the books after the bundle,
-// at normal prices. Only one code applies to an order, so they never stack.
+// at normal prices, and "free" waives the books and the delivery charge, so
+// the total is zero. Only one code applies to an order, so they never stack.
 // The browser shows the same arithmetic, but this is the copy that counts.
 function priceOrder(items, offer) {
   const qty = {};
@@ -48,16 +52,20 @@ function priceOrder(items, offer) {
   const sets = ids.every((id) => qty[id]) ? Math.min(...ids.map((id) => qty[id])) : 0;
   const units = items.reduce((a, i) => a + i.qty, 0);
   const singles = units - sets * 4;
+  const free = !!offer && offer.kind === "free";
   const fixed = !!offer && offer.kind === "fixed";
   let computed = sets * (fixed ? SET_CODE : SET) + singles * (fixed ? SINGLE_CODE : SINGLE);
   if (offer && offer.kind === "percent") computed -= Math.round(computed * offer.percent / 100);
+  if (free) computed = 0;
 
   // Hard floor, whatever the prices or the code say: never less than FLOOR a
-  // book, for every outcome. At today's prices it cannot bind; it guards
-  // against a later price change or a large percentage.
+  // book, for every outcome but one. At today's prices it cannot bind; it
+  // guards against a later price change or a large percentage. A "free" code
+  // is the single exception: it is a deliberate waiver, so neither this floor
+  // nor the delivery charge (see deliveryFor) applies to it.
   const floor = FLOOR * units;
-  const clamped = computed < floor;
-  const payable = clamped ? floor : computed;
+  const clamped = !free && computed < floor;
+  const payable = free ? 0 : clamped ? floor : computed;
 
   // Savings are measured against every book at the single price, so the
   // lines always add up to what is charged, floor or not
@@ -65,7 +73,7 @@ function priceOrder(items, offer) {
   const saved = Math.max(0, baseline - payable);
   const bundleSaving = Math.min(saved, Math.max(0, sets * (4 * SINGLE - SET)));
   const codeSaving = saved - bundleSaving;
-  return { units, sets, singles, baseline, bundleSaving, codeSaving, computed, floor, clamped, payable };
+  return { units, sets, singles, baseline, bundleSaving, codeSaving, computed, floor, clamped, payable, free };
 }
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => (
   { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
@@ -148,11 +156,11 @@ function totalsRows(o) {
   return bundle + code + `
     <tr>
       <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;">Delivery, Pathao, approx.</td>
-      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;text-align:right;">${money(DELIVERY)}</td>
+      <td style="padding:10px 0;font-family:'Courier New',monospace;font-size:12px;color:#6E655C;text-align:right;">${money(deliveryFor(o))}</td>
     </tr>
     <tr>
       <td style="padding:12px 0;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#141110;">Approximate total</td>
-      <td style="padding:12px 0;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#96382A;text-align:right;white-space:nowrap;">${money(o.payable + DELIVERY)}</td>
+      <td style="padding:12px 0;border-top:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:18px;color:#96382A;text-align:right;white-space:nowrap;">${money(o.payable + deliveryFor(o))}</td>
     </tr>`;
 }
 
@@ -164,8 +172,8 @@ function orderLines(o) {
     ...(o.bundleSaving ? ["  Bundle:  - " + money(o.bundleSaving)] : []),
     ...(o.codeSaving ? ["  Code " + o.code + ":  - " + money(o.codeSaving)] : []),
     "  Books total: " + money(o.payable),
-    "  Delivery, approx: " + money(DELIVERY),
-    "  Approximate total: " + money(o.payable + DELIVERY),
+    "  Delivery, approx: " + money(deliveryFor(o)),
+    "  Approximate total: " + money(o.payable + deliveryFor(o)),
   ];
 }
 
@@ -282,7 +290,10 @@ function emailHtml(o) {
       <tr><td style="padding-bottom:22px;border-bottom:1px solid #141110;font-family:Georgia,'Times New Roman',serif;font-size:34px;line-height:1.05;color:#141110;">
         New order from<br><span style="color:#96382A;">${esc(o.name)}</span>
       </td></tr>
-
+${o.free ? `      <tr><td style="padding:16px 0 0;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;letter-spacing:2px;text-transform:uppercase;color:#96382A;">
+        FREE ORDER &nbsp;/&nbsp; NOTHING TO PAY &nbsp;/&nbsp; TOTAL BDT 0
+      </td></tr>
+` : ""}
       <tr><td style="padding-top:18px;">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
           ${field("Name", o.name)}
@@ -303,9 +314,11 @@ function emailHtml(o) {
         PRE-ORDER PRICE ${money(SINGLE)} &nbsp;&middot;&nbsp; RRP ${money(WAS)}<br>
         DELIVERY ${DELIVERY_DAYS.toUpperCase()} &nbsp;&middot;&nbsp; INSIDE DHAKA ONLY<br>
         RECEIVED ${esc(o.at)}<br>
-        ${o.buyerSent
-          ? "CONFIRMATION SENT TO BUYER"
-          : '<span style="color:#96382A;">CONFIRMATION FAILED, RESEND MANUALLY</span>'}
+        ${o.free
+          ? "NO CONFIRMATION SENT, FREE ORDER"
+          : o.buyerSent
+            ? "CONFIRMATION SENT TO BUYER"
+            : '<span style="color:#96382A;">CONFIRMATION FAILED, RESEND MANUALLY</span>'}
       </td></tr>
 
     </table>
@@ -319,6 +332,7 @@ function emailText(o) {
     "PRE-ORDER - Behind the Eyes",
     "",
     "Reference: " + o.ref,
+    ...(o.free ? ["", "*** FREE ORDER: NOTHING TO PAY, TOTAL BDT 0 ***"] : []),
     "",
     "Name:     " + o.name,
     "WhatsApp: " + o.phone,
@@ -330,7 +344,8 @@ function emailText(o) {
     "",
     "Delivery " + DELIVERY_DAYS + ", inside Dhaka only.",
     "Received " + o.at,
-    o.buyerSent ? "Confirmation sent to buyer." : "CONFIRMATION FAILED, RESEND MANUALLY.",
+    o.free ? "NO CONFIRMATION SENT, FREE ORDER."
+      : o.buyerSent ? "Confirmation sent to buyer." : "CONFIRMATION FAILED, RESEND MANUALLY.",
   ].join("\n");
 }
 
@@ -420,6 +435,7 @@ module.exports = async (req, res) => {
     units: p.units, sets: p.sets, baseline: p.baseline,
     bundleSaving: p.bundleSaving, codeSaving: p.codeSaving, payable: p.payable,
     code: offer ? offer.code : "",
+    ...(p.free ? { free: true } : {}),
     ref: await claimReference(),
     at: new Date().toLocaleString("en-GB", { timeZone: "Asia/Dhaka" }) + " (Dhaka)",
   };
@@ -444,9 +460,10 @@ module.exports = async (req, res) => {
 
   // The buyer's copy goes first so the owner email can say whether it
   // arrived. It is best effort: whatever happens here is reported to the
-  // owner, and never fails the order.
+  // owner, and never fails the order. A free order sends the buyer nothing, and
+  // the owner email says so, so a skipped copy is never mistaken for a failed one.
   order.buyerSent = false;
-  try {
+  if (!order.free) try {
     const c = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
@@ -479,7 +496,8 @@ module.exports = async (req, res) => {
         from, to: ownerTo,
         reply_to: email || undefined,          // so a reply reaches the buyer
         subject: "Pre-order " + order.ref + " - " + name + " - "
-                 + items.reduce((a, i) => a + i.qty, 0) + " book(s)",
+                 + items.reduce((a, i) => a + i.qty, 0) + " book(s)"
+                 + (order.free ? " - FREE ORDER, BDT 0" : ""),
         html: emailHtml(order),
         text: emailText(order),
       }),
@@ -494,5 +512,5 @@ module.exports = async (req, res) => {
   }
 
   await record(order);
-  return res.status(200).json({ ok: true, ref: order.ref });
+  return res.status(200).json({ ok: true, ref: order.ref, ...(order.free ? { free: true } : {}) });
 };

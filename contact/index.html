@@ -277,6 +277,11 @@ a{color:inherit;text-decoration:none}
 }
 .code__msg.is-on{color:var(--ox-sm)}
 .code__msg.is-off{color:var(--muted)}
+/* A free code gets a line of its own: the serif, a little larger, in the accent */
+.code__msg.is-free{
+  font-family:var(--serif);font-size:clamp(1.05rem,1.5vw,1.25rem);letter-spacing:0;
+  line-height:1.3;color:var(--ox-sm);margin-top:.7rem;
+}
 #t-disc span:first-child,#t-save span:first-child{color:var(--ox-sm)}
 .order__done{border-top:1px solid var(--rule);padding-top:1.4rem;outline:none}
 .order__done-h{
@@ -1336,7 +1341,7 @@ a{color:inherit;text-decoration:none}
             <div><span id="t-count">0 books</span><span id="t-sub">BDT 0</span></div>
             <div id="t-save" hidden><span>Bundle</span><span id="t-save-val">- BDT 0</span></div>
             <div id="t-disc" hidden><span id="t-disc-label">Code</span><span id="t-disc-val">- BDT 0</span></div>
-            <div><span>Delivery, Pathao, approx.</span><span>BDT 100</span></div>
+            <div><span>Delivery, Pathao, approx.</span><span id="t-deliv">BDT 100</span></div>
             <div class="grand"><span>Approximate total</span><span id="t-grand">BDT 0</span></div>
           </div>
 
@@ -1348,9 +1353,9 @@ a{color:inherit;text-decoration:none}
         </form>
 
         <div class="order__done" id="order-done" tabindex="-1" role="status" aria-live="polite" hidden>
-          <p class="order__done-h">Order received.</p>
+          <p class="order__done-h" id="order-done-h">Order received.</p>
           <p class="order__ref">Reference <b id="order-ref"></b></p>
-          <p>I will message you on WhatsApp at the number you gave to confirm your total, including delivery,
+          <p id="order-done-text">I will message you on WhatsApp at the number you gave to confirm your total, including delivery,
           and send the payment details for bKash, Nagad, Bank Transfer or RedotPay.
           Nothing is charged until then. Delivery is
           <b>5 to 7 working days</b>, inside Dhaka.</p>
@@ -1886,8 +1891,9 @@ const ORDER_CONFIG = {
   var ALL = ["original", "inside", "influence", "shadows"];
   var money = function(n){ return "BDT " + n.toLocaleString("en-US"); };
 
-  // Each complete set of four is a set, the rest singles. A code (`deal`) is one of two kinds:
-  // "fixed" swaps in the code prices, "percent" takes that much off the books after the bundle.
+  // Each complete set of four is a set, the rest singles. A code (`deal`) is one of three kinds:
+  // "fixed" swaps in the code prices, "percent" takes that much off the books after the bundle,
+  // and "free" waives the books and the delivery charge, so the total is zero.
   function priceOrder(items, deal){
     var qty = {};
     items.forEach(function(i){ qty[i.id] = (qty[i.id] || 0) + i.qty; });
@@ -1895,18 +1901,21 @@ const ORDER_CONFIG = {
     var sets = complete ? Math.min.apply(null, ALL.map(function(id){ return qty[id]; })) : 0;
     var units = items.reduce(function(a, i){ return a + i.qty; }, 0);
     var singles = units - sets * 4;
+    var free = !!deal && deal.kind === "free";
     var fixed = !!deal && deal.kind === "fixed";
     var computed = sets * (fixed ? SET_CODE : SET) + singles * (fixed ? SINGLE_CODE : SINGLE);
     if (deal && deal.kind === "percent") computed -= Math.round(computed * deal.percent / 100);
-    // Hard floor, as on the server: never less than FLOOR a book, whatever the code
-    var payable = Math.max(computed, FLOOR * units);
+    // Hard floor, as on the server: never less than FLOOR a book, whatever the code.
+    // A free code is the one exception: neither the floor nor delivery applies to it.
+    var payable = free ? 0 : Math.max(computed, FLOOR * units);
     // Savings against every book at the single price, so the lines add up
     var baseline = units * SINGLE;
     var saved = Math.max(0, baseline - payable);
     var bundleSaving = Math.min(saved, Math.max(0, sets * (4 * SINGLE - SET)));
     return {
       units: units, sets: sets, singles: singles, baseline: baseline,
-      bundleSaving: bundleSaving, codeSaving: saved - bundleSaving, payable: payable
+      bundleSaving: bundleSaving, codeSaving: saved - bundleSaving, payable: payable,
+      delivery: free ? 0 : DELIVERY
     };
   }
 
@@ -1941,10 +1950,22 @@ const ORDER_CONFIG = {
   var codeBtn = document.getElementById("code-go");
   var codeMsg = document.getElementById("code-msg");
 
+  // What an applied code says about itself. A free code gets its own line, in its own style.
+  function showApplied(){
+    if (offer && offer.kind === "free") {
+      codeMsg.className = "code__msg is-free";
+      codeMsg.textContent = "For my adorable wife, it's free.";
+    } else {
+      codeMsg.className = "code__msg is-on";
+      codeMsg.textContent = "Code applied";
+    }
+  }
+
   // What the server says a real code does, or null if the answer is not one we understand
   function readOffer(d){
     if (!d || !d.valid) return null;
     if (d.kind === "fixed") return { kind: "fixed" };
+    if (d.kind === "free") return { kind: "free" };
     if (d.kind === "percent" && d.percent >= 1 && d.percent <= 90 && d.percent % 1 === 0) return { kind: "percent", percent: d.percent };
     return null;
   }
@@ -1973,8 +1994,7 @@ const ORDER_CONFIG = {
         offer = found;
         codeValue = d.code || entered.toUpperCase();
         codeInput.value = codeValue;
-        codeMsg.className = "code__msg is-on";
-        codeMsg.textContent = "Code applied";
+        showApplied();
       } else {
         // A code that does not work never throws away one that does
         codeMsg.className = "code__msg is-off";
@@ -2002,7 +2022,7 @@ const ORDER_CONFIG = {
       if (codeMsg.className.indexOf("is-off") > -1) { codeMsg.className = "code__msg"; codeMsg.textContent = ""; }
       return;
     }
-    if (typed === codeValue) { codeMsg.className = "code__msg is-on"; codeMsg.textContent = "Code applied"; }
+    if (typed === codeValue) showApplied();
     else {
       codeMsg.className = "code__msg";
       codeMsg.textContent = typed ? "Press Apply to use this code instead" : "Press Apply to remove the code";
@@ -2019,7 +2039,10 @@ const ORDER_CONFIG = {
     tDisc.hidden = !p.codeSaving;
     tDiscLabel.textContent = "Code " + codeValue;
     tDiscVal.textContent = "- " + money(p.codeSaving);
-    tGrand.textContent = money(p.payable + (p.units ? DELIVERY : 0));
+    // delivery is shown as 0 on a free order, never hidden, so the sum still reads
+    var deliv = p.units ? p.delivery : 0;
+    document.getElementById("t-deliv").textContent = money(p.delivery);
+    tGrand.textContent = money(p.payable + deliv);
   }
 
   picks.forEach(function(p){
@@ -2135,7 +2158,12 @@ const ORDER_CONFIG = {
       var ref = document.getElementById("order-ref");
       if (ref && res.d && res.d.ref) ref.textContent = res.d.ref;
       var sent = document.getElementById("order-sent");
-      if (sent) sent.hidden = !email;
+      // A free order sends the buyer no email, so the page says something different
+      var free = !!(res.d && res.d.free);
+      var head = document.getElementById("order-done-h"), text = document.getElementById("order-done-text");
+      if (head) head.textContent = free ? "Your order is confirmed my beautiful baby" : "Order received.";
+      if (text) text.hidden = free;
+      if (sent) sent.hidden = free || !email;
       form.hidden = true;
       done.hidden = false;
       done.focus();

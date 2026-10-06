@@ -20,8 +20,8 @@ const dom = new JSDOM(html, {
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
-        const good = String(sent.code).trim().toUpperCase() === 'SAYKAMONI';
-        return Promise.resolve({ ok:true, json: () => Promise.resolve(good ? { valid:true, code:'SAYKAMONI', kind:'fixed' } : { valid:false }) });
+        const good = String(sent.code).trim().toUpperCase() === 'FIXEDCODE';
+        return Promise.resolve({ ok:true, json: () => Promise.resolve(good ? { valid:true, code:'FIXEDCODE', kind:'fixed' } : { valid:false }) });
       }
       if (String(url).includes('/api/order')) {
         posted = JSON.parse(opts.body);
@@ -77,7 +77,7 @@ function run() {
   ok(/\.cta--choose\{[^}]*margin-top:auto/.test(html), 'the Choose capsule is pushed to the bottom with margin-top:auto');
   ok(/\.book__more\{margin:\.7rem 0 1rem\}/.test(html), 'a minimum gap above the capsule is kept for the tallest column');
 
-  // price copy: cards, order lead and terms panel all say the same fixed prices
+  // price copy: cards, order lead and terms panel all fix the same fixed prices
   {
     const cards = [...d.querySelectorAll('.book__price')];
     ok(cards.length === 4 && cards.every((c) => c.querySelector('s').textContent === 'BDT 1,499' && c.querySelector('b').textContent === 'BDT 999'), 'every card strikes through the RRP of BDT 1,499 beside BDT 999');
@@ -91,6 +91,23 @@ function run() {
     // the structured data on /info carries the same single price
     const ld = [...d.querySelectorAll('script[type="application/ld+json"]')].map((s) => s.textContent).join(' ');
     if (ld.includes('"Offer"')) ok(!/"price":"1499"/.test(ld) && /"price":"999"/.test(ld), 'structured data offers the book at 999, not the old price');
+  }
+
+  // the free code's presentation: its message style, a delivery row that can read 0, and the success panel hooks
+  {
+    const rule = (html.match(/\.code__msg\.is-free\{[^}]*\}/) || [''])[0];
+    const base = (html.match(/\.code__msg\{[^}]*\}/) || [''])[0];
+    const rem = (s) => parseFloat((s.match(/font-size:(?:clamp\()?([\d.]+)rem/) || [0, 0])[1]);
+    ok(/font-family:var\(--serif\)/.test(rule), 'the free code message is set in the serif');
+    ok(/color:var\(--ox-sm\)/.test(rule), 'in the accent colour (the darkened accent the page uses for small text on ivory)');
+    ok(rem(rule) > rem(base) && rem(base) > 0, 'and slightly larger than the usual code message: ' + rem(rule) + 'rem against ' + rem(base) + 'rem');
+    const deliv = d.getElementById('t-deliv');
+    ok(!!deliv && deliv.textContent === 'BDT 100' && /Delivery, Pathao, approx\./.test(deliv.parentElement.textContent), 'the delivery row is addressable, and still reads BDT 100 for an ordinary order');
+    const head = d.getElementById('order-done-h');
+    ok(!!head && head.className === 'order__done-h' && head.textContent === 'Order received.', 'the Order received heading keeps its class and wording');
+    ok(!!d.getElementById('order-done-text') && !!d.getElementById('order-ref') && !!d.getElementById('order-sent'), 'the lines a free order hides or keeps can be addressed');
+    ok(html.includes("For my adorable wife, it's free.") && html.includes('Your order is confirmed my beautiful baby'), 'both free messages are in the page');
+    ok(/free/.test((html.match(/function readOffer[\s\S]*?\n  }/) || [''])[0]) && /deal\.kind === "free"/.test(html), 'the page understands the free kind');
   }
 
   // the Order received panel names the same payment options as the terms and the email
@@ -243,7 +260,7 @@ function run() {
   const codeBtn = d.getElementById('code-go');
   const codeMsg = d.getElementById('code-msg');
   ok(!!codeInput && !!codeBtn, 'discount code field present');
-  ok(!/SAYKAMONI|SAKURA25|PREORDER20/i.test(d.documentElement.innerHTML), 'no discount code appears in the page source');
+  ok(!/SAYKAMONI|EYES20|FIXEDCODE|SAKURA\d+|PREORDER20/i.test(d.documentElement.innerHTML), 'no discount code appears in the page source');
 
   codeInput.value = 'WRONGCODE';
   codeBtn.dispatchEvent(new window.Event('click', { bubbles: true }));

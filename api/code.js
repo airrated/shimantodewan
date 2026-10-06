@@ -2,11 +2,13 @@
    POST /api/code   { code }  ->  { valid: false }
                               or  { valid: true, code, kind: "fixed" }
                               or  { valid: true, code, kind: "percent", percent }
+                              or  { valid: true, code, kind: "free" }
 
    Lets the page show the right total before the buyer commits, without the
    code ever appearing in the page source. `kind` says what sort of discount
    the code is, because they work differently: "fixed" switches to the fixed
-   code prices, "percent" takes that much off the books after any bundle.
+   code prices, "percent" takes that much off the books after any bundle, and
+   "free" waives the books and the delivery charge altogether.
    /api/order looks the code up again, so a forged response here changes
    nothing.
    ========================================================================== */
