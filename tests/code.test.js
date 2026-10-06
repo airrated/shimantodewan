@@ -7,13 +7,18 @@ const fails = [];
 const ok = (c, label, extra) => { console.log((c ? 'pass  ' : 'FAIL  ') + label + (extra ? '  ' + extra : '')); if (!c) fails.push(label); };
 
 let posted = null;
-const dom = new JSDOM(fs.readFileSync(file, 'utf8'), {
+// reduced: the page is told the visitor prefers reduced motion
+const build = (reduced) => new JSDOM(fs.readFileSync(file, 'utf8'), {
   runScripts: 'dangerously', pretendToBeVisual: true,
   url: 'https://shimantodewan.com/contact',
   beforeParse(w) {
     w.IntersectionObserver = class { constructor(cb){this.cb=cb;} observe(){} unobserve(){} disconnect(){} };
-    w.matchMedia = w.matchMedia || (q => ({ matches:false, media:q, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} }));
+    w.matchMedia = q => ({ matches: reduced && /prefers-reduced-motion:\s*reduce/.test(q), media:q, addListener(){}, removeListener(){}, addEventListener(){}, removeEventListener(){} });
     w.scrollTo = () => {};
+    // lets a test hold the animation's fallback timer instead of waiting seconds for it
+    const realSetTimeout = w.setTimeout.bind(w);
+    w.__hold = false; w.__held = [];
+    w.setTimeout = (fn, ms, ...rest) => (w.__hold && ms >= 3000 ? (w.__held.push({ fn, ms }), 0) : realSetTimeout(fn, ms, ...rest));
     w.fetch = (url, opts) => {
       if (String(url).includes('/api/code')) {
         const sent = JSON.parse(opts.body);
@@ -32,6 +37,7 @@ const dom = new JSDOM(fs.readFileSync(file, 'utf8'), {
     };
   },
 });
+const dom = build(false);
 const { window } = dom, d = window.document;
 const wait = (ms) => new Promise(r => setTimeout(r, ms));
 
@@ -39,6 +45,12 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   await wait(150);
   window.dispatchEvent(new window.Event('load'));
   await wait(50);
+
+  // count every kiss container the page ever creates, wherever it comes from
+  let created = 0;
+  new window.MutationObserver((recs) => recs.forEach((r) => r.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('kiss-rain')) created++; })))
+    .observe(d.body, { childList: true });
+  const rain = () => [...d.querySelectorAll('.kiss-rain')];
 
   ok(!d.documentElement.innerHTML.includes('FIXEDCODE'), 'the code never appears in the page source');
 
@@ -137,6 +149,7 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   // and so does a failed check
   await apply('boom');
   ok(msg() === 'Could not check that code. EYES20 is still applied.' && money('t-grand') === 'BDT 3,938', 'a failed check keeps the applied code too: ' + msg());
+  ok(created === 0 && rain().length === 0, 'no animation for a fixed code, a percent code, an unknown code or a failed check: ' + created + ' created');
 
   // FIXEDCODE replaces EYES20 when applied; codes never combine. Enter in the field applies as well.
   input.value = 'fixedcode';
@@ -164,6 +177,66 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   ok(/\bis-free\b/.test(freeMsg.className) && !/\bis-on\b/.test(freeMsg.className), 'in its own style class, not the usual one: ' + freeMsg.className);
   ok(!/Code applied|%/.test(freeMsg.textContent), 'and not the usual message, with no percentage');
   ok(d.getElementById('t-disc-label').textContent === 'Code SAYKAMONI', 'the code row is labelled Code SAYKAMONI');
+
+  // --- the kiss animation: for the free code, and nothing else ----------------------
+  {
+    const KISS = ['\u{1F48B}', '❤️', '\u{1F495}'];                       // kiss mark, red heart, two hearts
+    const cv = (el, name) => (new RegExp(name + ':\\s*([^;]+)').exec(el.getAttribute('style') || '') || [, ''])[1].trim();
+    const land = (el) => el.dispatchEvent(new window.Event('animationend', { bubbles: true }));
+    const box = rain()[0], kisses = box ? [...box.querySelectorAll('.kiss')] : [];
+
+    ok(created === 1 && rain().length === 1, 'applying the free code creates exactly one animation container: ' + created + ' created, ' + rain().length + ' in the page');
+    ok(!!box && box.parentNode === d.body && box.getAttribute('aria-hidden') === 'true', 'it sits on the body and is hidden from assistive technology');
+    ok(kisses.length >= 18 && kisses.length <= 24, 'between 18 and 24 emojis: ' + kisses.length);
+    ok(kisses.every((k) => !!k.querySelector('.kiss__i') && KISS.includes(k.querySelector('.kiss__i').textContent)), 'each is a kiss mark, a red heart or two hearts');
+    const counts = KISS.map((e) => kisses.filter((k) => k.textContent === e).length);
+    ok(counts.every((c) => c > 0) && Math.max(...counts) - Math.min(...counts) <= 1, 'the three are evenly mixed, so none dominates: ' + counts.join(', '));
+    const nums = (name) => kisses.map((k) => parseFloat(cv(k, name)));
+    ok(nums('--size').every((x) => x >= 18 && x <= 34), 'sizes are between 18 and 34px: ' + Math.min(...nums('--size')) + ' to ' + Math.max(...nums('--size')));
+    ok(nums('--dur').every((x) => x >= 3.5 && x <= 6) && kisses.every((k) => /s$/.test(cv(k, '--dur'))), 'fall durations are between 3.5 and 6 seconds: ' + Math.min(...nums('--dur')) + ' to ' + Math.max(...nums('--dur')));
+    ok(nums('--delay').every((x) => x >= 0 && x <= 1.2), 'start delays are up to 1.2 seconds: ' + Math.max(...nums('--delay')));
+    ok(nums('--x').every((x) => x >= 0 && x <= 96) && kisses.every((k) => /%$/.test(cv(k, '--x'))), 'each starts at its own horizontal position across the width');
+    ok(nums('--sway').every((x) => x > 0) && nums('--spin').every((x) => x > 0) && kisses.every((k) => ['-1', '1'].includes(cv(k, '--dir'))), 'each has a sway, a rotation and a direction');
+    ok(new Set(nums('--size')).size > 1 && new Set(nums('--dur')).size > 1 && new Set(nums('--x')).size > 1, 'the values are random, not all the same');
+    ok(cv(box, '--fall') === window.innerHeight + 'px', 'they fall the height of the viewport: ' + cv(box, '--fall'));
+
+    // it runs once, on acceptance
+    typeIn('EYES20'); typeIn('saykamoni');
+    ok(created === 1 && rain()[0] === box, 'editing the field, or typing the free code back, does not restart it');
+    await apply('saykamoni');
+    ok(created === 1 && rain()[0] === box && rain().length === 1, 'pressing Apply again on the applied free code does not restart it');
+
+    // it clears itself, entirely, when the last one has landed
+    land(kisses[0].querySelector('.kiss__i'));
+    ok(rain().length === 1, 'a landing signal from the endless sway inside an emoji is not the end of the fall');
+    kisses.slice(0, -1).forEach(land);
+    ok(rain().length === 1 && d.querySelectorAll('.kiss').length === kisses.length, 'it stays while any emoji is still falling');
+    land(kisses[kisses.length - 1]);
+    ok(rain().length === 0 && d.querySelectorAll('.kiss, .kiss__i').length === 0, 'when the last one lands the container is gone from the page entirely');
+
+    // applying the code again after removing it runs it again
+    await apply('');
+    ok(rain().length === 0 && created === 1, 'removing the code starts nothing');
+    await apply('saykamoni');
+    ok(created === 2 && rain().length === 1, 'applying the free code again after removing it runs it again: ' + created);
+
+    // coming back to it from another code runs it again, and never leaves two
+    await apply('eyes20');
+    ok(created === 2, 'switching to a percent code starts nothing');
+    await apply('saykamoni');
+    ok(created === 3 && rain().length === 1, 'coming back to the free code runs it again, with only one container: ' + created + ' created, ' + rain().length + ' present');
+
+    // and if a browser never reports the end, a timer clears it anyway
+    await apply('');
+    window.__hold = true; window.__held = [];
+    await apply('saykamoni');
+    window.__hold = false;
+    ok(created === 4 && rain().length === 1, 'a fourth run');
+    ok(window.__held.length === 1 && window.__held[0].ms >= 4500 && window.__held[0].ms <= 8200, 'a fallback timer is set a second after the longest fall: ' + (window.__held[0] && window.__held[0].ms) + 'ms');
+    window.__held[0].fn();
+    ok(rain().length === 0, 'when it fires the container is gone, even if no animation ever ended');
+    ok(d.getElementById('t-disc-label').textContent === 'Code SAYKAMONI' && money('t-grand') === 'BDT 0', 'and the free code is still applied underneath it');
+  }
   const deliv = () => money('t-deliv');
   const delivRowShown = () => { const row = d.getElementById('t-deliv').parentElement; return !row.hidden && !d.getElementById('totals').hidden; };
 
@@ -233,6 +306,31 @@ const wait = (ms) => new Promise(r => setTimeout(r, ms));
   ok(posted && posted.code === 'FIXEDCODE', 'the order carries the code that is applied, not whatever is typed in the field: ' + (posted && posted.code));
   ok(np.head === 'Order received.' && np.text === false && np.sent === false, 'a normal order still reads "Order received.", with its usual lines and the email note: ' + np.head);
   ok(np.ref === 'JZ5' && np.shown, 'and shows its reference');
+  // nothing else on the page can start it, and at most one is ever in the page
+  ok(rain().length <= 1, 'at most one animation container is ever in the page');
+
+  // --- reduced motion: the animation is skipped entirely, the message still shows ---
+  {
+    const rdom = build(true), rw = rdom.window, rd = rw.document;
+    await wait(150); rw.dispatchEvent(new rw.Event('load')); await wait(50);
+    let made = 0;
+    new rw.MutationObserver((recs) => recs.forEach((r) => r.addedNodes.forEach((n) => { if (n.classList && n.classList.contains('kiss-rain')) made++; })))
+      .observe(rd.body, { childList: true });
+    ok(rw.matchMedia('(prefers-reduced-motion: reduce)').matches === true, 'test setup: this visitor prefers reduced motion');
+    const rbox = rd.querySelector('input[name="book"][value="shadows"]');
+    rbox.checked = true; rbox.dispatchEvent(new rw.Event('change', { bubbles: true }));
+    const rin = rd.getElementById('o-code'), rbtn = rd.getElementById('code-go');
+    const rapply = async (v) => { rin.value = v; rbtn.dispatchEvent(new rw.Event('click', { bubbles: true })); await wait(60); };
+    await rapply('saykamoni');
+    const rmsg = rd.getElementById('code-msg');
+    ok(rmsg.textContent === "For my adorable wife, it's free." && /\bis-free\b/.test(rmsg.className), 'under reduced motion the message still shows: ' + rmsg.textContent);
+    ok(rd.getElementById('t-grand').textContent === 'BDT 0', 'and the free total still applies');
+    ok(made === 0 && !rd.querySelector('.kiss-rain') && !rd.querySelector('.kiss'), 'but the animation is never created');
+    await rapply(''); await rapply('saykamoni');
+    ok(made === 0 && !rd.querySelector('.kiss-rain'), 'not even when the code is applied again after removing it');
+    rw.close();
+  }
+
   console.log('\n' + (fails.length ? fails.length + ' FAILURES' : 'all code checks passed'));
   process.exit(fails.length ? 1 : 0);
 })();

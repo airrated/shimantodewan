@@ -110,6 +110,47 @@ function run() {
     ok(/free/.test((html.match(/function readOffer[\s\S]*?\n  }/) || [''])[0]) && /deal\.kind === "free"/.test(html), 'the page understands the free kind');
   }
 
+  // the free code's kiss animation: how it is built, and that nothing else can start it
+  {
+    const rule = (sel) => (html.match(new RegExp(sel.replace(/\./g, '\\.') + '\\{[^}]*\\}')) || [''])[0];
+    const rain = rule('.kiss-rain'), kiss = rule('.kiss'), inner = rule('.kiss__i');
+    ok(/position:fixed/.test(rain) && /inset:0/.test(rain), 'the container is fixed and covers the viewport');
+    ok(/overflow:hidden/.test(rain), 'and clips, so it can never create a scrollbar or shift anything');
+    ok(/pointer-events:none/.test(rain) && /pointer-events:none/.test(kiss) && /pointer-events:none/.test(inner), 'it is click-through at every level, so the form stays usable while it runs');
+
+    // stacking: above the page, below the masthead
+    const z = [...html.matchAll(/([^{}]+)\{[^}]*?z-index:\s*(\d+)/g)].map((m) => ({ sel: m[1].trim(), z: +m[2] }));
+    const kissZ = (z.find((x) => /\.kiss-rain$/.test(x.sel)) || {}).z;
+    const mastZ = (z.find((x) => /(^|\s|\})\.masthead$/.test(x.sel)) || {}).z;
+    const pageZ = Math.max(...z.filter((x) => !/masthead|progress|skip|kiss-rain/.test(x.sel)).map((x) => x.z), 0);
+    ok(kissZ > pageZ && kissZ < mastZ, 'it sits above the page (' + pageZ + ') and below the masthead (' + mastZ + '): z-index ' + kissZ);
+
+    // compositor only: nothing but transform and opacity is animated
+    const kf = (name) => (html.match(new RegExp('@keyframes ' + name + '\\{([\\s\\S]*?)\\n\\}')) || [, ''])[1];
+    const props = (s) => [...new Set([...s.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]))].sort();
+    ok(JSON.stringify(props(kf('kiss-fall'))) === '["opacity","transform"]', 'the fall animates only transform and opacity: ' + props(kf('kiss-fall')).join(', '));
+    ok(JSON.stringify(props(kf('kiss-sway'))) === '["transform"]', 'the sway and rotation animate only transform: ' + props(kf('kiss-sway')).join(', '));
+    ok(/animation:kiss-fall/.test(kiss) && /animation:kiss-sway/.test(inner), 'both animations are applied by class, in plain CSS');
+    ok(!/transition/.test(kiss + inner + rain), 'nothing relies on a transition of a layout property');
+    ok(/66\.6%\{opacity:1\}/.test(kf('kiss-fall')) && /to\{[^}]*opacity:0/.test(kf('kiss-fall')), 'they fade out over the last third of the fall');
+    ok(/@media \(prefers-reduced-motion:reduce\)\{\.kiss-rain\{display:none\}\}/.test(html), 'and the stylesheet hides the container under reduced motion as a second safeguard');
+
+    // the script: one definition, one call, only for a free code newly accepted, no library
+    const fn = (html.match(/function kissRain\(\)\{[\s\S]*?\n  \}\n/) || [''])[0];
+    ok((html.match(/kissRain\(\)/g) || []).length === 2, 'kissRain is defined once and called once');
+    ok(/if \(found\.kind === "free" && !wasFree\) kissRain\(\);/.test(html), 'the one call is for a free code being newly accepted, and for nothing else');
+    ok(/prefers-reduced-motion: reduce/.test(fn) && /\.matches\) return;/.test(fn), 'it returns before creating anything under reduced motion');
+    ok(!/gsap|Lenis|requestAnimationFrame|\.animate\(|style\.(top|left|width|height|margin)\s*=/.test(fn), 'plain JS and CSS: no library, and no layout property is touched while it runs');
+    ok(/18 \+ Math\.floor\(Math\.random\(\) \* 7\)/.test(fn) && /between\(18, 34\)/.test(fn) && /between\(3\.5, 6\)/.test(fn) && /between\(0, 1\.2\)/.test(fn), 'the counts, sizes, durations and delays are the ones asked for');
+    ok(/\\uD83D\\uDC8B/.test(fn + html) && /\\u2764\\uFE0F/.test(html) && /\\uD83D\\uDC95/.test(html), 'the emojis are a kiss mark, a red heart and two hearts');
+
+    // it must never appear anywhere else on the site
+    for (const other of ['index.html', '404.html']) {
+      const s = fs.readFileSync(other, 'utf8');
+      ok(!/kiss|\\uD83D\\uDC8B/i.test(s), other + ' has none of it');
+    }
+  }
+
   // the Order received panel names the same payment options as the terms and the email
   {
     const panel = d.getElementById('order-done').textContent.replace(/\s+/g, ' ').trim();
